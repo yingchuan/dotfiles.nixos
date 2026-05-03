@@ -12,9 +12,13 @@
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
     let
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      # 建立一個允許非自由軟體的 pkgs 實例
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
     in {
-      # 系統層級配置: sudo nixos-rebuild switch --flake .#thinkpad-t14s-gen6
+      # 系統層級配置
       nixosConfigurations.thinkpad-t14s-gen6 = nixpkgs.lib.nixosSystem {
         inherit system;
         specialArgs = { inherit inputs; };
@@ -23,7 +27,7 @@
         ];
       };
 
-      # 用戶層級配置: home-manager switch --flake .#richard@thinkpad-t14s-gen6
+      # 用戶層級配置
       homeConfigurations."richard@thinkpad-t14s-gen6" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs = { inherit inputs; };

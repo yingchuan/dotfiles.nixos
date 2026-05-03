@@ -5,6 +5,8 @@
   home.homeDirectory = "/home/richard";
   home.stateVersion = "25.11";
 
+  nixpkgs.config.allowUnfree = true;
+
   home.packages = with pkgs; [
     # 字體
     noto-fonts
@@ -44,14 +46,13 @@
     # 多媒體與圖形 (Snacks.image 依賴)
     imagemagick
     
-    # 輸入法相關 (雖然 i18n.inputMethod 會處理，但列在這裡方便查看)
-    fcitx5-configtool
     google-chrome
   ];
 
   # Fcitx5 新酷音設定
   i18n.inputMethod = {
-    enabled = "fcitx5";
+    enable = true;
+    type = "fcitx5";
     fcitx5.waylandFrontend = true;
     fcitx5.addons = with pkgs; [
       fcitx5-chewing
@@ -63,15 +64,20 @@
   # 啟用 SSH Agent 服務
   services.ssh-agent.enable = true;
 
-  # Git 設定
+  # Git 設定 (依照最新版本的 Home Manager 語法修正)
   programs.git = {
     enable = true;
-    userName = "Your Name"; # 請自行修改
-    userEmail = "your-email@example.com"; # 請自行修改
-    extraConfig = {
-      init.defaultBranch = "main";
-      # 強制 Git 使用 ssh-agent
-      core.sshCommand = "ssh -o AddKeysToAgent=yes";
+    settings = {
+      user = {
+        name = "Your Name";
+        email = "your-email@example.com";
+      };
+      init = {
+        defaultBranch = "main";
+      };
+      core = {
+        sshCommand = "ssh -o AddKeysToAgent=yes";
+      };
     };
   };
 
@@ -152,11 +158,15 @@
     
     oh-my-zsh = {
       enable = true;
-      plugins = [ "git" "sudo" "fzf" ];
+      plugins = [ "git" "sudo" "fzf" "ssh-agent" ];
       theme = "bira";
     };
 
-    initExtra = '''';
+    initExtra = ''
+      # Oh My Zsh ssh-agent 插件設定：自動載入特定的金鑰
+      zstyle :omz:plugins:ssh-agent identities yingchuan
+      zstyle :omz:plugins:ssh-agent lifetime 4h
+    '';
   };
 
   # Tmux 設定 (交給 oh-my-tmux 管理，所以這裡關閉以免衝突)
@@ -165,7 +175,6 @@
   };
 
   # Oh My Tmux (gpakosz/.tmux)
-  # 下載並連結設定檔
   home.file.".tmux.conf".source = pkgs.fetchFromGitHub {
     owner = "gpakosz";
     repo = ".tmux";
@@ -173,50 +182,30 @@
     sha256 = "sha256-nXm664l84YSwZeRM4Hsweqgz+OlpyfwXcgEdyNGhaGA=";
   } + "/.tmux.conf";
 
-  # 建立 local 設定檔，啟用 Nerd Font 視覺特效
   home.file.".tmux.conf.local".text = ''
-    # -- 基礎設定 (從 programs.tmux 移過來) ---------------------------------------
+    # -- 基礎設定
     set -g mouse on
     setw -g clock-mode-style 24
 
-    # -- 視覺外觀 (Nerd Font & Powerline) ---------------------------------------
+    # -- 視覺外觀
     tmux_conf_theme_24b_colour=true
-
-    # 使用 Powerline 符號 (需要 Nerd Font)
     tmux_conf_theme_left_separator_main='\uE0B0'
     tmux_conf_theme_left_separator_sub='\uE0B1'
     tmux_conf_theme_right_separator_main='\uE0B2'
     tmux_conf_theme_right_separator_sub='\uE0B3'
 
-    # 狀態欄內容配置
+    # 狀態欄
     tmux_conf_theme_status_left=" ❐ #S | ↑#{?uptime_y, #{uptime_y}y,}#{?uptime_d, #{uptime_d}d,}#{?uptime_h, #{uptime_h}h,}#{?uptime_m, #{uptime_m}m,} "
-    tmux_conf_theme_status_right=" #{prefix}#{pairing}#{synchronized} , %R , %d %b | #{username}#{root} | #{hostname} "
-
-    # 電池設定 (Nerd Font 圖標)
-    tmux_conf_battery_bar_symbol_full="█"
-    tmux_conf_battery_bar_symbol_empty="░"
-    tmux_conf_battery_bar_length="auto"
-    tmux_conf_battery_bar_palette="gradient"
-    tmux_conf_battery_status_charging="󱐋"
-    tmux_conf_battery_status_discharging="󰂃"
-
-    # 加入電池和負載到右側狀態欄
     tmux_conf_theme_status_right=" #{prefix}#{pairing}#{synchronized} | #{cpu_load} CPU | #{battery_status} #{battery_bar} #{battery_percentage} | %R , %d %b "
 
-    # 樣式優化
+    # 樣式
     tmux_conf_theme_focused_pane_bg='default'
     tmux_conf_theme_pane_border_style='thin'
 
-    # -- vi 複製模式 -----------------------------------------------------------
+    # vi 模式
     setw -g mode-keys vi
     bind -T copy-mode-vi v send -X begin-selection
     bind -T copy-mode-vi y send -X copy-selection-and-cancel
-    bind -T copy-mode-vi Escape send -X cancel
-    bind -T copy-mode-vi L send -X end-of-line
-    bind -T copy-mode-vi H send -X start-of-line
-
-    # -- 剪貼簿 (OSC 52 支援，適合 SSH) ----------------------------------------
-    set -s set-clipboard on
   '';
 
   fonts.fontconfig = {
@@ -246,9 +235,7 @@
 
   dconf.settings = {
     "org/gnome/shell" = {
-      enabled-extensions = [
-        "kimpanel@kde.org"
-      ];
+      enabled-extensions = [ "kimpanel@kde.org" ];
     };
     "org/gnome/mutter" = {
       experimental-features = [ "scale-monitor-framebuffer" ];
