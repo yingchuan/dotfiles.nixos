@@ -46,17 +46,32 @@
     
     # 輸入法相關 (雖然 i18n.inputMethod 會處理，但列在這裡方便查看)
     fcitx5-configtool
+    google-chrome
   ];
 
   # Fcitx5 新酷音設定
   i18n.inputMethod = {
-    enabled = "fcitx"; # Home Manager 中通常使用 "fcitx5" 或 "fcitx"，目前多數推薦 fcitx5
-    type = "fcitx5";
+    enabled = "fcitx5";
     fcitx5.addons = with pkgs; [
       fcitx5-chewing
       fcitx5-chinese-addons
       fcitx5-gtk
     ];
+  };
+
+  # 啟用 SSH Agent 服務
+  services.ssh-agent.enable = true;
+
+  # Git 設定
+  programs.git = {
+    enable = true;
+    userName = "Your Name"; # 請自行修改
+    userEmail = "your-email@example.com"; # 請自行修改
+    extraConfig = {
+      init.defaultBranch = "main";
+      # 強制 Git 使用 ssh-agent
+      core.sshCommand = "ssh -o AddKeysToAgent=yes";
+    };
   };
 
   # fzf 設定
