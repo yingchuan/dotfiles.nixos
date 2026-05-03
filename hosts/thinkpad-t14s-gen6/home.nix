@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   home.username = "richard";
@@ -46,20 +46,17 @@
     # 多媒體與圖形 (Snacks.image 依賴)
     imagemagick
     
+    # 系統工具 (Tmux 狀態列依賴)
+    procps
+    coreutils
+    gnused
+    gnugrep
+    gawk
+    nettools # 提供 ifconfig/hostname
+    bc       # oh-my-tmux 計算 CPU/Mem 必備
+    
     google-chrome
   ];
-
-  # Fcitx5 新酷音設定
-  i18n.inputMethod = {
-    enable = true;
-    type = "fcitx5";
-    fcitx5.waylandFrontend = true;
-    fcitx5.addons = with pkgs; [
-      fcitx5-chewing
-      qt6Packages.fcitx5-chinese-addons
-      fcitx5-gtk
-    ];
-  };
 
   # 啟用 SSH Agent 服務
   services.ssh-agent.enable = true;
@@ -69,8 +66,8 @@
     enable = true;
     settings = {
       user = {
-        name = "Your Name";
-        email = "your-email@example.com";
+        name = "Richard Chen";
+        email = "yingchuan.chen.2007@gmail.com";
       };
       init = {
         defaultBranch = "main";
@@ -91,11 +88,11 @@
   home.sessionVariables = {
     CC = "gcc";
     # 輸入法環境變數
-    GTK_IM_MODULE = "fcitx";
-    QT_IM_MODULE = "fcitx";
+    # 在 Wayland 下，建議不要設定 GTK_IM_MODULE 和 QT_IM_MODULE
+    # 讓程式自動使用 Wayland text-input 協定
     XMODIFIERS = "@im=fcitx";
     SDL_IM_MODULE = "fcitx";
-    GLFW_IM_MODULE = "ibus";
+    GLFW_IM_MODULE = "fcitx";
   };
 
   programs.neovim = {
@@ -110,6 +107,8 @@
   programs.ghostty = {
     enable = true;
     settings = {
+      font-family = "JetBrainsMono Nerd Font";
+      font-style = "Medium";
       font-size = 14;
       background = "000000";
       foreground = "ffffff";
@@ -162,7 +161,7 @@
       theme = "bira";
     };
 
-    initExtra = ''
+    initContent = ''
       # Oh My Zsh ssh-agent 插件設定：自動載入特定的金鑰
       zstyle :omz:plugins:ssh-agent identities yingchuan
       zstyle :omz:plugins:ssh-agent lifetime 4h
@@ -183,30 +182,70 @@
   } + "/.tmux.conf";
 
   home.file.".tmux.conf.local".text = ''
-    # -- 基礎設定
-    set -g mouse on
-    setw -g clock-mode-style 24
+# : << 'EOF'
+# -- 基礎設定
+set -g mouse on
+setw -g clock-mode-style 24
 
-    # -- 視覺外觀
-    tmux_conf_theme_24b_colour=true
-    tmux_conf_theme_left_separator_main='\uE0B0'
-    tmux_conf_theme_left_separator_sub='\uE0B1'
-    tmux_conf_theme_right_separator_main='\uE0B2'
-    tmux_conf_theme_right_separator_sub='\uE0B3'
+# -- Tokyo Night 配色定義
+tmux_conf_theme_24b_colour=true
 
-    # 狀態欄
-    tmux_conf_theme_status_left=" ❐ #S | ↑#{?uptime_y, #{uptime_y}y,}#{?uptime_d, #{uptime_d}d,}#{?uptime_h, #{uptime_h}h,}#{?uptime_m, #{uptime_m}m,} "
-    tmux_conf_theme_status_right=" #{prefix}#{pairing}#{synchronized} | #{cpu_load} CPU | #{battery_status} #{battery_bar} #{battery_percentage} | %R , %d %b "
+# 顏色定義 (Tokyo Night 風格)
+tmux_conf_theme_colour_1="#1a1b26"    # 極深藍 (背景)
+tmux_conf_theme_colour_2="#24283b"    # 深藍 (次要背景)
+tmux_conf_theme_colour_3="#c0caf5"    # 淡藍灰 (主文字)
+tmux_conf_theme_colour_4="#7aa2f7"    # 亮藍 (重點)
+tmux_conf_theme_colour_5="#bb9af7"    # 淺紫 (重點)
+tmux_conf_theme_colour_6="#7dcfff"    # 青色 (重點)
+tmux_conf_theme_colour_7="#9ece6a"    # 柔和綠 (電池)
+tmux_conf_theme_colour_8="#f7768e"    # 柔和紅 (警告)
+tmux_conf_theme_colour_9="#e0af68"    # 橙色
 
-    # 樣式
-    tmux_conf_theme_focused_pane_bg='default'
-    tmux_conf_theme_pane_border_style='thin'
+# 分隔符號
+tmux_conf_theme_left_separator_main=''
+tmux_conf_theme_left_separator_sub=''
+tmux_conf_theme_right_separator_main=''
+tmux_conf_theme_right_separator_sub=''
 
-    # vi 模式
-    setw -g mode-keys vi
-    bind -T copy-mode-vi v send -X begin-selection
-    bind -T copy-mode-vi y send -X copy-selection-and-cancel
-  '';
+# 狀態欄內容設計
+tmux_conf_theme_status_left=" ❐ #S "
+tmux_conf_theme_status_right=" #{prefix}#{pairing}#{synchronized} |  #{cpu_percentage} |  #{mem_percentage} | #{battery_status} #{battery_percentage} | %H:%M "
+
+# 狀態欄顏色配置
+# 左側 (Session): 深藍文字 (#1a1b26) 配 亮藍背景 (#7aa2f7)
+tmux_conf_theme_status_left_fg="$tmux_conf_theme_colour_1"
+tmux_conf_theme_status_left_bg="$tmux_conf_theme_colour_4"
+
+# 右側 (5 個區段): 1.模式 | 2.CPU | 3.記憶體 | 4.電池 | 5.時間
+tmux_conf_theme_status_right_fg="$tmux_conf_theme_colour_3,$tmux_conf_theme_colour_4,$tmux_conf_theme_colour_5,$tmux_conf_theme_colour_7,$tmux_conf_theme_colour_1"
+tmux_conf_theme_status_right_bg="$tmux_conf_theme_colour_2,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_4"
+
+# 樣式與行為
+tmux_conf_theme_focused_pane_bg='default'
+tmux_conf_theme_pane_border_style='thin'
+tmux_conf_update_interval=5
+tmux_conf_battery_bar_palette="gradient"
+
+# 電池圖示
+tmux_conf_battery_status_charging="󱐋"
+tmux_conf_battery_status_discharging="󰂂"
+
+# vi 模式
+setw -g mode-keys vi
+bind -T copy-mode-vi v send -X begin-selection
+bind -T copy-mode-vi y send -X copy-selection-and-cancel
+# EOF
+
+# cpu_percentage() {
+#   top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}'
+# }
+
+# mem_percentage() {
+#   free -m | awk 'NR==2{printf "%.1f%%", $3*100/$2 }'
+# }
+
+# "$@"
+'';
 
   fonts.fontconfig = {
     enable = true;
