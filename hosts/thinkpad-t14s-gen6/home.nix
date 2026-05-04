@@ -56,6 +56,7 @@
     bc       # oh-my-tmux 計算 CPU/Mem 必備
     distrobox # 容器化執行其他 Linux 發行版
     htop
+    uv        # 現代化的 Python 套件與環境管理工具
   ];
 
   # 啟用 SSH Agent 服務
