@@ -32,31 +32,41 @@
     wget
     tree-sitter
     
-    # 語言開發環境 (LSP & Mason 依賴)
+    # 語言開發環境
     nodejs
-    python3
-    pyright            # Python LSP
-    uv
-    go
-    gopls              # Go LSP
-    zig
-    zls                # Zig LSP
-    rustup             # Rust (包含 cargo, rustc, rust-analyzer)
-    lua-language-server
-    stylua             # Lua 格式化
+    prettier
     
-    # C/C++ 工具
+    # --- Go ---
+    go
+    gopls
+    golangci-lint
+
+    # --- Python ---
+    python3
+    python312Packages.pynvim
+    python312Packages.pip
+    pyright
+    uv
+
+    # --- System Tools & Neovim Dependencies ---
+    lua5_1             # 修復 Lazy.nvim lua5.1 警告
+    luarocks           # 修復 Lazy.nvim luarocks 錯誤
+    sqlite             # 修復 Snacks.picker 錯誤
+    ghostscript        # 修復 Snacks.image 'gs' 找不到錯誤
+    mermaid-cli        # 修復 Snacks.image 'mmdc' 找不到錯誤
+    tectonic           # 修復 Snacks.image LaTeX 報錯 (較輕量的 LaTeX 引擎)
+
+    # --- Rust & Others ---
+    rustup
+    lua-language-server
+    stylua
     gcc
     gnumake
     cmake
-    clang-tools        # 提供 clangd LSP
-    gdb                # 除錯器
-    
-    # 必要的編譯函式庫 (解決 tree-sitter 編譯問題)
+    clang-tools
+    gdb
     stdenv.cc.cc.lib
     pkg-config
-    
-    # 多媒體與圖形 (Snacks.image 依賴)
     imagemagick
     
     # 系統工具 (Tmux 狀態列依賴)
@@ -101,6 +111,8 @@
   # 設定環境變數
   home.sessionVariables = {
     CC = "gcc";
+    LIBSQLITE_PATH = "${pkgs.sqlite.out}/lib/libsqlite3.so";
+    LIBSQLITE3_PATH = "${pkgs.sqlite.out}/lib/libsqlite3.so";
     # 輸入法環境變數
     # 在 Wayland 下，建議不要設定 GTK_IM_MODULE 和 QT_IM_MODULE
     # 讓程式自動使用 Wayland text-input 協定
@@ -114,7 +126,15 @@
     defaultEditor = true;
     viAlias = true;
     vimAlias = true;
-    withPython3 = false;
+    withPython3 = true;
+    withNodeJs = true;
+    extraPython3Packages = ps: with ps; [
+      pynvim
+    ];
+    # 使用 Lua 設定全域變數，這在 LazyVim 中更穩定
+    initLua = ''
+      vim.g.sqlite_clib_path = "${pkgs.sqlite.out}/lib/libsqlite3.so"
+    '';
     withRuby = false;
   };
 
@@ -143,7 +163,26 @@
     recursive = true;
   };
 
-  # 自定義全黑主題設定
+  # 語言支援微調
+  xdg.configFile."nvim/lua/config/nixos.lua".text = ''
+    -- NixOS 專用的路徑修正
+    vim.g.sqlite_clib_path = "${pkgs.sqlite.out}/lib/libsqlite3.so"
+  '';
+
+  # 在 init.lua 載入 nixos 修正
+  # 由於 ~/.config/nvim 是 Link 到 starter，我們可以在 plugins 裡面加上這個設定
+  xdg.configFile."nvim/lua/plugins/nixos.lua".text = ''
+    return {
+      -- 設定 SQLite 路徑
+      {
+        "kkharji/sqlite.lua",
+        lazy = false,
+        config = function()
+          vim.g.sqlite_clib_path = "${pkgs.sqlite.out}/lib/libsqlite3.so"
+        end,
+      },
+    }
+  '';
   xdg.configFile."nvim/lua/plugins/theme.lua".text = ''
     return {
       {
