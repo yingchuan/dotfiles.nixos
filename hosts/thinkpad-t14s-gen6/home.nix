@@ -35,9 +35,22 @@
     # 語言開發環境 (LSP & Mason 依賴)
     nodejs
     python3
-    luarocks
+    pyright            # Python LSP
+    uv
     go
-    rustup
+    gopls              # Go LSP
+    zig
+    zls                # Zig LSP
+    rustup             # Rust (包含 cargo, rustc, rust-analyzer)
+    lua-language-server
+    stylua             # Lua 格式化
+    
+    # C/C++ 工具
+    gcc
+    gnumake
+    cmake
+    clang-tools        # 提供 clangd LSP
+    gdb                # 除錯器
     
     # 必要的編譯函式庫 (解決 tree-sitter 編譯問題)
     stdenv.cc.cc.lib
@@ -146,6 +159,26 @@
           },
         },
       },
+    }
+  '';
+
+  # LazyVim 語言支援設定
+  xdg.configFile."nvim/lua/plugins/lang.lua".text = ''
+    return {
+      -- 載入 LazyVim 的官方語言模組
+      { "LazyVim/LazyVim", opts = {
+        extras = {
+          "lang.go",
+          "lang.zig",
+          "lang.rust",
+          "lang.clangd",
+          "lang.python",
+          "lang.json",
+          "lang.toml",
+          "lang.yaml",
+          "lang.docker",
+        },
+      } },
     }
   '';
 
