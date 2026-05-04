@@ -208,8 +208,8 @@ tmux_conf_theme_right_separator_main=''
 tmux_conf_theme_right_separator_sub=''
 
 # 狀態欄內容設計
-tmux_conf_theme_status_left=" ❐ #S "
-tmux_conf_theme_status_right=" #{prefix}#{pairing}#{synchronized} |  #{cpu_percentage} |  #{mem_percentage} | #{battery_status} #{battery_percentage} | %H:%M "
+tmux_conf_theme_status_left=" ❐ #S | 󰒋 #{hostname} "
+tmux_conf_theme_status_right=" #{prefix}#{pairing}#{synchronized} |  #{cpu_percentage} |  #{mem_percentage} | #{battery_status} #{battery_percentage} | #{my_date} "
 
 # 狀態欄顏色配置
 # 左側 (Session): 深藍文字 (#1a1b26) 配 亮藍背景 (#7aa2f7)
@@ -237,11 +237,15 @@ bind -T copy-mode-vi y send -X copy-selection-and-cancel
 # EOF
 
 # cpu_percentage() {
-#   top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}'
+#   uptime | awk -F'load average:' '{ print $2 }' | cut -d',' -f1 | sed 's/ //g'
 # }
 
 # mem_percentage() {
 #   free -m | awk 'NR==2{printf "%.1f%%", $3*100/$2 }'
+# }
+
+# my_date() {
+#   LC_TIME=C date +'%y-%m-%d %a %H:%M'
 # }
 
 # "$@"
