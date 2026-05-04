@@ -123,6 +123,7 @@
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
     gnomeExtensions.kimpanel
+    google-chrome
   ];
 
   # ... (中間省略部分註解以保持簡潔)
