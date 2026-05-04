@@ -157,14 +157,18 @@
     
     oh-my-zsh = {
       enable = true;
-      plugins = [ "git" "sudo" "fzf" "ssh-agent" ];
+      plugins = [ "git" "sudo" "fzf" ];
       theme = "bira";
     };
 
     initContent = ''
-      # Oh My Zsh ssh-agent 插件設定：自動載入特定的金鑰
-      zstyle :omz:plugins:ssh-agent identities yingchuan
-      zstyle :omz:plugins:ssh-agent lifetime 4h
+      # 指向 Systemd 管理的 ssh-agent socket
+      export SSH_AUTH_SOCK="/run/user/1000/ssh-agent"
+
+      # 自動載入金鑰 (如果尚未載入)
+      if [ -z "$(ssh-add -l | grep 'yingchuan')" ]; then
+        ssh-add ~/.ssh/yingchuan 2>/dev/null
+      fi
     '';
   };
 
