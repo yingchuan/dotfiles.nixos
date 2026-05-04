@@ -54,8 +54,8 @@
     gawk
     nettools # 提供 ifconfig/hostname
     bc       # oh-my-tmux 計算 CPU/Mem 必備
-    
-    google-chrome
+    distrobox # 容器化執行其他 Linux 發行版
+    htop
   ];
 
   # 啟用 SSH Agent 服務

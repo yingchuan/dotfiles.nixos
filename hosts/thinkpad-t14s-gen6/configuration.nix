@@ -97,10 +97,17 @@
     isNormalUser = true;
     shell = pkgs.zsh;
     description = "Richard Chen";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "docker" ];
     packages = with pkgs; [
     #  thunderbird
     ];
+  };
+
+  # 啟用容器引擎 (Podman)
+  virtualisation.podman = {
+    enable = true;
+    dockerCompat = true;
+    defaultNetwork.settings.dns_enabled = true;
   };
 
   # Install firefox.
