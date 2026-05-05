@@ -17,7 +17,7 @@
     sarasa-gothic
     
     # 終端機
-    gemini-cli
+    gemini-cli-bin
     tmux
     jq
     
@@ -77,9 +77,33 @@
     gawk
     nettools # 提供 ifconfig/hostname
     bc       # oh-my-tmux 計算 CPU/Mem 必備
-    distrobox # 容器化執行其他 Linux 發行版
     htop
     uv        # 現代化的 Python 套件與環境管理工具
+
+    # --- 自訂封裝腳本 ---
+    (pkgs.buildFHSEnv {
+      name = "openclaw"; 
+      targetPkgs = pkgs: with pkgs; [
+        nodejs_24
+        git
+        curl
+        wget
+        gcc
+        gnumake
+        python3
+        gemini-cli-bin
+        gnugrep
+        coreutils
+      ];
+      profile = ''
+        export NPM_CONFIG_PREFIX=~/.npm-global
+        export PATH=~/.npm-global/bin:$PATH
+        export GEMINI_CLI_OAUTH_CLIENT_ID=$(grep -E -r -o "OAUTH_CLIENT_ID = \"([^\"]+)\"" ${pkgs.gemini-cli-bin}/lib/gemini/ | head -n 1 | cut -d'"' -f2)
+        export GEMINI_CLI_OAUTH_CLIENT_SECRET=$(grep -E -r -o "OAUTH_CLIENT_SECRET = \"([^\"]+)\"" ${pkgs.gemini-cli-bin}/lib/gemini/ | head -n 1 | cut -d'"' -f2)
+      '';
+      runScript = "openclaw"; 
+    })
+
   ];
 
   # 啟用 SSH Agent 服務
