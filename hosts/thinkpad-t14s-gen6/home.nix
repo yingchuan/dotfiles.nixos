@@ -1,5 +1,8 @@
 { config, pkgs, lib, ... }:
 
+let
+  sqlite_lib = "${pkgs.sqlite.out}/lib/libsqlite3.so";
+in
 {
   home.username = "richard";
   home.homeDirectory = "/home/richard";
@@ -8,7 +11,7 @@
   nixpkgs.config.allowUnfree = true;
 
   home.packages = with pkgs; [
-    # 字體
+    # Fonts
     noto-fonts
     noto-fonts-cjk-sans
     noto-fonts-cjk-serif
@@ -16,12 +19,21 @@
     nerd-fonts.jetbrains-mono
     sarasa-gothic
     
-    # 終端機
-    gemini-cli-bin
+    # Terminal & Shell Tools
     tmux
     jq
+    fzf
+    procps
+    coreutils
+    gnused
+    gnugrep
+    gawk
+    nettools
+    bc
+    htop
+    file
     
-    # Neovim 依賴工具
+    # Neovim & Development Dependencies
     git
     lazygit
     ripgrep
@@ -31,58 +43,37 @@
     unzip
     wget
     tree-sitter
-    
-    # 語言開發環境
+    sqlite
+    ghostscript
+    mermaid-cli
+    tectonic
+    imagemagick
+    pkg-config
+    stdenv.cc.cc.lib
+
+    # Language Servers & Runtimes
     nodejs
     prettier
-    
-    # --- Go ---
     go
     gopls
     golangci-lint
-
-    # --- Python ---
     python3
     python312Packages.pynvim
     python312Packages.pip
     pyright
     uv
-
-    # --- System Tools & Neovim Dependencies ---
-    lua5_1             # 修復 Lazy.nvim lua5.1 警告
-    luarocks           # 修復 Lazy.nvim luarocks 錯誤
-    sqlite             # 修復 Snacks.picker 錯誤
-    ghostscript        # 修復 Snacks.image 'gs' 找不到錯誤
-    mermaid-cli        # 修復 Snacks.image 'mmdc' 找不到錯誤
-    tectonic           # 修復 Snacks.image LaTeX 報錯 (較輕量的 LaTeX 引擎)
-
-    # --- Rust & Others ---
     rustup
     lua-language-server
     stylua
-    gcc
-    gnumake
+    lua5_1
+    luarocks
     cmake
     clang-tools
     gdb
-    stdenv.cc.cc.lib
-    pkg-config
-    imagemagick
-    
-    # 系統工具 (Tmux 狀態列依賴)
-    procps
-    coreutils
-    gnused
-    gnugrep
-    gawk
-    nettools # 提供 ifconfig/hostname
-    bc       # oh-my-tmux 計算 CPU/Mem 必備
-    htop
-    uv        # 現代化的 Python 套件與環境管理工具
 
-    # --- 自訂封裝腳本 ---
+    # --- AI FHSEnv (ai-env) ---
     (pkgs.buildFHSEnv {
-      name = "openclaw"; 
+      name = "ai-env"; 
       targetPkgs = pkgs: with pkgs; [
         nodejs_24
         git
@@ -91,25 +82,24 @@
         gcc
         gnumake
         python3
-        gemini-cli-bin
-        gnugrep
-        coreutils
+        stdenv.cc.cc.lib
       ];
       profile = ''
         export NPM_CONFIG_PREFIX=~/.npm-global
+        mkdir -p ~/.npm-global/bin
         export PATH=~/.npm-global/bin:$PATH
-        export GEMINI_CLI_OAUTH_CLIENT_ID=$(grep -E -r -o "OAUTH_CLIENT_ID = \"([^\"]+)\"" ${pkgs.gemini-cli-bin}/lib/gemini/ | head -n 1 | cut -d'"' -f2)
-        export GEMINI_CLI_OAUTH_CLIENT_SECRET=$(grep -E -r -o "OAUTH_CLIENT_SECRET = \"([^\"]+)\"" ${pkgs.gemini-cli-bin}/lib/gemini/ | head -n 1 | cut -d'"' -f2)
-      '';
-      runScript = "openclaw"; 
-    })
+        export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
 
+        if ! command -v gemini &> /dev/null || ! command -v mem0 &> /dev/null; then
+            npm install -g @google/gemini-cli @mem0/cli --quiet
+        fi
+      '';
+      runScript = "bash"; 
+    })
   ];
 
-  # 啟用 SSH Agent 服務
   services.ssh-agent.enable = true;
 
-  # Git 設定 (依照最新版本的 Home Manager 語法修正)
   programs.git = {
     enable = true;
     settings = {
@@ -117,29 +107,20 @@
         name = "Richard Chen";
         email = "yingchuan.chen.2007@gmail.com";
       };
-      init = {
-        defaultBranch = "main";
-      };
-      core = {
-        sshCommand = "ssh -o AddKeysToAgent=yes";
-      };
+      init.defaultBranch = "main";
+      core.sshCommand = "ssh -o AddKeysToAgent=yes";
     };
   };
 
-  # fzf 設定
   programs.fzf = {
     enable = true;
     enableZshIntegration = true;
   };
 
-  # 設定環境變數
   home.sessionVariables = {
     CC = "gcc";
-    LIBSQLITE_PATH = "${pkgs.sqlite.out}/lib/libsqlite3.so";
-    LIBSQLITE3_PATH = "${pkgs.sqlite.out}/lib/libsqlite3.so";
-    # 輸入法環境變數
-    # 在 Wayland 下，建議不要設定 GTK_IM_MODULE 和 QT_IM_MODULE
-    # 讓程式自動使用 Wayland text-input 協定
+    LIBSQLITE_PATH = sqlite_lib;
+    LIBSQLITE3_PATH = sqlite_lib;
     XMODIFIERS = "@im=fcitx";
     SDL_IM_MODULE = "fcitx";
     GLFW_IM_MODULE = "fcitx";
@@ -152,12 +133,9 @@
     vimAlias = true;
     withPython3 = true;
     withNodeJs = true;
-    extraPython3Packages = ps: with ps; [
-      pynvim
-    ];
-    # 使用 Lua 設定全域變數，這在 LazyVim 中更穩定
+    extraPython3Packages = ps: with ps; [ pynvim ];
     initLua = ''
-      vim.g.sqlite_clib_path = "${pkgs.sqlite.out}/lib/libsqlite3.so"
+      vim.g.sqlite_clib_path = "${sqlite_lib}"
     '';
     withRuby = false;
   };
@@ -176,7 +154,6 @@
     };
   };
 
-  # 連結 LazyVim starter 模板
   home.file.".config/nvim" = {
     source = pkgs.fetchFromGitHub {
       owner = "LazyVim";
@@ -187,26 +164,23 @@
     recursive = true;
   };
 
-  # 語言支援微調
+  # Neovim Custom Configs
   xdg.configFile."nvim/lua/config/nixos.lua".text = ''
-    -- NixOS 專用的路徑修正
-    vim.g.sqlite_clib_path = "${pkgs.sqlite.out}/lib/libsqlite3.so"
+    vim.g.sqlite_clib_path = "${sqlite_lib}"
   '';
 
-  # 在 init.lua 載入 nixos 修正
-  # 由於 ~/.config/nvim 是 Link 到 starter，我們可以在 plugins 裡面加上這個設定
   xdg.configFile."nvim/lua/plugins/nixos.lua".text = ''
     return {
-      -- 設定 SQLite 路徑
       {
         "kkharji/sqlite.lua",
         lazy = false,
         config = function()
-          vim.g.sqlite_clib_path = "${pkgs.sqlite.out}/lib/libsqlite3.so"
+          vim.g.sqlite_clib_path = "${sqlite_lib}"
         end,
       },
     }
   '';
+
   xdg.configFile."nvim/lua/plugins/theme.lua".text = ''
     return {
       {
@@ -215,7 +189,7 @@
         priority = 1000,
         opts = {
           style = "night",
-          transparent = true, -- 透明背景會顯示 Ghostty 的 000000
+          transparent = true,
           styles = {
             sidebars = "transparent",
             floats = "transparent",
@@ -225,10 +199,8 @@
     }
   '';
 
-  # LazyVim 語言支援設定
   xdg.configFile."nvim/lua/plugins/lang.lua".text = ''
     return {
-      -- 載入 LazyVim 的官方語言模組
       { "LazyVim/LazyVim", opts = {
         extras = {
           "lang.go",
@@ -245,7 +217,6 @@
     }
   '';
 
-  # Zsh 與 Oh My Zsh 設定
   programs.zsh = {
     enable = true;
     enableCompletion = true;
@@ -259,22 +230,15 @@
     };
 
     initContent = ''
-      # 指向 Systemd 管理的 ssh-agent socket
       export SSH_AUTH_SOCK="/run/user/1000/ssh-agent"
-
-      # 自動載入金鑰 (如果尚未載入)
       if [ -z "$(ssh-add -l | grep 'yingchuan')" ]; then
         ssh-add ~/.ssh/yingchuan 2>/dev/null
       fi
     '';
   };
 
-  # Tmux 設定 (交給 oh-my-tmux 管理，所以這裡關閉以免衝突)
-  programs.tmux = {
-    enable = false;
-  };
+  programs.tmux.enable = false;
 
-  # Oh My Tmux (gpakosz/.tmux)
   home.file.".tmux.conf".source = pkgs.fetchFromGitHub {
     owner = "gpakosz";
     repo = ".tmux";
@@ -284,72 +248,47 @@
 
   home.file.".tmux.conf.local".text = ''
 # : << 'EOF'
-# -- 基礎設定
 set -g mouse on
 setw -g clock-mode-style 24
 
-# -- Tokyo Night 配色定義
+# Tokyo Night Theme
 tmux_conf_theme_24b_colour=true
+tmux_conf_theme_colour_1="#1a1b26"
+tmux_conf_theme_colour_2="#24283b"
+tmux_conf_theme_colour_3="#c0caf5"
+tmux_conf_theme_colour_4="#7aa2f7"
+tmux_conf_theme_colour_5="#bb9af7"
+tmux_conf_theme_colour_6="#7dcfff"
+tmux_conf_theme_colour_7="#9ece6a"
+tmux_conf_theme_colour_8="#f7768e"
+tmux_conf_theme_colour_9="#e0af68"
 
-# 顏色定義 (Tokyo Night 風格)
-tmux_conf_theme_colour_1="#1a1b26"    # 極深藍 (背景)
-tmux_conf_theme_colour_2="#24283b"    # 深藍 (次要背景)
-tmux_conf_theme_colour_3="#c0caf5"    # 淡藍灰 (主文字)
-tmux_conf_theme_colour_4="#7aa2f7"    # 亮藍 (重點)
-tmux_conf_theme_colour_5="#bb9af7"    # 淺紫 (重點)
-tmux_conf_theme_colour_6="#7dcfff"    # 青色 (重點)
-tmux_conf_theme_colour_7="#9ece6a"    # 柔和綠 (電池)
-tmux_conf_theme_colour_8="#f7768e"    # 柔和紅 (警告)
-tmux_conf_theme_colour_9="#e0af68"    # 橙色
-
-# 分隔符號
 tmux_conf_theme_left_separator_main=''
 tmux_conf_theme_left_separator_sub=''
 tmux_conf_theme_right_separator_main=''
 tmux_conf_theme_right_separator_sub=''
 
-# 狀態欄內容設計
 tmux_conf_theme_status_left=" ❐ #S | 󰒋 #{hostname} "
 tmux_conf_theme_status_right=" #{prefix}#{pairing}#{synchronized} |  #{cpu_percentage} |  #{mem_percentage} | #{battery_status} #{battery_percentage} | #{my_date} "
 
-# 狀態欄顏色配置
-# 左側 (Session): 深藍文字 (#1a1b26) 配 亮藍背景 (#7aa2f7)
 tmux_conf_theme_status_left_fg="$tmux_conf_theme_colour_1"
 tmux_conf_theme_status_left_bg="$tmux_conf_theme_colour_4"
 
-# 右側 (5 個區段): 1.模式 | 2.CPU | 3.記憶體 | 4.電池 | 5.時間
 tmux_conf_theme_status_right_fg="$tmux_conf_theme_colour_3,$tmux_conf_theme_colour_4,$tmux_conf_theme_colour_5,$tmux_conf_theme_colour_7,$tmux_conf_theme_colour_1"
 tmux_conf_theme_status_right_bg="$tmux_conf_theme_colour_2,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_4"
 
-# 樣式與行為
 tmux_conf_theme_focused_pane_bg='default'
 tmux_conf_theme_pane_border_style='thin'
 tmux_conf_update_interval=5
 tmux_conf_battery_bar_palette="gradient"
 
-# 電池圖示
 tmux_conf_battery_status_charging="󱐋"
 tmux_conf_battery_status_discharging="󰂂"
 
-# vi 模式
 setw -g mode-keys vi
 bind -T copy-mode-vi v send -X begin-selection
 bind -T copy-mode-vi y send -X copy-selection-and-cancel
 # EOF
-
-# cpu_percentage() {
-#   uptime | awk -F'load average:' '{ print $2 }' | cut -d',' -f1 | sed 's/ //g'
-# }
-
-# mem_percentage() {
-#   free -m | awk 'NR==2{printf "%.1f%%", $3*100/$2 }'
-# }
-
-# my_date() {
-#   LC_TIME=C date +'%y-%m-%d %a %H:%M'
-# }
-
-# "$@"
 '';
 
   fonts.fontconfig = {
