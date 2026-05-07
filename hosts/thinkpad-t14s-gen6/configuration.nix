@@ -88,6 +88,18 @@
 
   programs.firefox.enable = true;
   programs.zsh.enable = true;
+  # Steam & Gaming Configuration
+  programs.steam = {
+    enable = true;
+    remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
+    dedicatedServer.openFirewall = true; # Open ports in the firewall for Steam Dedicated Server
+    localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
+  };
+
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+  };
 
   nixpkgs.config.allowUnfree = true;
 

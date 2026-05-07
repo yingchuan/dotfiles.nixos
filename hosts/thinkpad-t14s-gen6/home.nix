@@ -246,50 +246,58 @@ in
     sha256 = "sha256-nXm664l84YSwZeRM4Hsweqgz+OlpyfwXcgEdyNGhaGA=";
   } + "/.tmux.conf";
 
-  home.file.".tmux.conf.local".text = ''
-# : << 'EOF'
-set -g mouse on
-setw -g clock-mode-style 24
-
-# Tokyo Night Theme
-tmux_conf_theme_24b_colour=true
-tmux_conf_theme_colour_1="#1a1b26"
-tmux_conf_theme_colour_2="#24283b"
-tmux_conf_theme_colour_3="#c0caf5"
-tmux_conf_theme_colour_4="#7aa2f7"
-tmux_conf_theme_colour_5="#bb9af7"
-tmux_conf_theme_colour_6="#7dcfff"
-tmux_conf_theme_colour_7="#9ece6a"
-tmux_conf_theme_colour_8="#f7768e"
-tmux_conf_theme_colour_9="#e0af68"
-
-tmux_conf_theme_left_separator_main=''
-tmux_conf_theme_left_separator_sub=''
-tmux_conf_theme_right_separator_main=''
-tmux_conf_theme_right_separator_sub=''
-
-tmux_conf_theme_status_left=" ❐ #S | 󰒋 #{hostname} "
-tmux_conf_theme_status_right=" #{prefix}#{pairing}#{synchronized} |  #{cpu_percentage} |  #{mem_percentage} | #{battery_status} #{battery_percentage} | #{my_date} "
-
-tmux_conf_theme_status_left_fg="$tmux_conf_theme_colour_1"
-tmux_conf_theme_status_left_bg="$tmux_conf_theme_colour_4"
-
-tmux_conf_theme_status_right_fg="$tmux_conf_theme_colour_3,$tmux_conf_theme_colour_4,$tmux_conf_theme_colour_5,$tmux_conf_theme_colour_7,$tmux_conf_theme_colour_1"
-tmux_conf_theme_status_right_bg="$tmux_conf_theme_colour_2,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_4"
-
-tmux_conf_theme_focused_pane_bg='default'
-tmux_conf_theme_pane_border_style='thin'
-tmux_conf_update_interval=5
-tmux_conf_battery_bar_palette="gradient"
-
-tmux_conf_battery_status_charging="󱐋"
-tmux_conf_battery_status_discharging="󰂂"
-
-setw -g mode-keys vi
-bind -T copy-mode-vi v send -X begin-selection
-bind -T copy-mode-vi y send -X copy-selection-and-cancel
-# EOF
-'';
+  home.file.".tmux.conf.local".text = builtins.concatStringsSep "\n" [
+    "# : << 'EOF'"
+    "set -g mouse on"
+    "setw -g clock-mode-style 24"
+    ""
+    "# Tokyo Night Theme"
+    "tmux_conf_theme_24b_colour=true"
+    "tmux_conf_theme_colour_1=\"#1a1b26\""
+    "tmux_conf_theme_colour_2=\"#24283b\""
+    "tmux_conf_theme_colour_3=\"#c0caf5\""
+    "tmux_conf_theme_colour_4=\"#7aa2f7\""
+    "tmux_conf_theme_colour_5=\"#bb9af7\""
+    "tmux_conf_theme_colour_6=\"#7dcfff\""
+    "tmux_conf_theme_colour_7=\"#9ece6a\""
+    "tmux_conf_theme_colour_8=\"#f7768e\""
+    "tmux_conf_theme_colour_9=\"#e0af68\""
+    ""
+    "tmux_conf_theme_left_separator_main=''"
+    "tmux_conf_theme_left_separator_sub=''"
+    "tmux_conf_theme_right_separator_main=''"
+    "tmux_conf_theme_right_separator_sub=''"
+    ""
+    "tmux_conf_theme_status_left=\" ❐ #S | 󰒋 #{hostname} \""
+    "tmux_conf_theme_status_right=\" #{prefix}#{pairing}#{synchronized} |  #{loadavg} |  #{mem_usage} | 󰂂 #{battery_percentage} | %m/%d %H:%M \""
+    ""
+    "tmux_conf_theme_status_left_fg=\"$tmux_conf_theme_colour_1\""
+    "tmux_conf_theme_status_left_bg=\"$tmux_conf_theme_colour_4\""
+    ""
+    "tmux_conf_theme_status_right_fg=\"$tmux_conf_theme_colour_3,$tmux_conf_theme_colour_4,$tmux_conf_theme_colour_5,$tmux_conf_theme_colour_7,$tmux_conf_theme_colour_1\""
+    "tmux_conf_theme_status_right_bg=\"$tmux_conf_theme_colour_2,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_4\""
+    ""
+    "tmux_conf_theme_focused_pane_bg='default'"
+    "tmux_conf_theme_pane_border_style='thin'"
+    "tmux_conf_update_interval=5"
+    "tmux_conf_battery_bar_palette=\"gradient\""
+    ""
+    "tmux_conf_battery_status_charging=\"󱐋\""
+    "tmux_conf_battery_status_discharging=\"󰂂\""
+    ""
+    "setw -g mode-keys vi"
+    "bind -T copy-mode-vi v send -X begin-selection"
+    "bind -T copy-mode-vi y send -X copy-selection-and-cancel"
+    ""
+    "# # /!\\ do not remove the following line"
+    "# EOF"
+    "#"
+    "# mem_usage() {"
+    "#   awk '/MemTotal/ { total=$2 } /MemAvailable/ { avail=$2 } END { printf(\"%.0f%%\", (total-avail)/total*100) }' /proc/meminfo"
+    "# }"
+    "#"
+    "# \"$@\""
+  ];
 
   fonts.fontconfig = {
     enable = true;
