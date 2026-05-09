@@ -76,9 +76,11 @@
     shell = pkgs.zsh;
     description = "Richard Chen";
     extraGroups = [ "networkmanager" "wheel" "docker" ];
+    autoSubUidGidRange = true;
   };
 
   # Container Engine
+  virtualisation.containers.enable = true;
   virtualisation.podman = {
     enable = true;
     dockerCompat = true;
