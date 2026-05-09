@@ -54,6 +54,8 @@ in
     # Language Servers & Runtimes
     nodejs
     prettier
+    marksman
+    markdownlint-cli2
     go
     gopls
     golangci-lint
@@ -70,6 +72,9 @@ in
     cmake
     clang-tools
     gdb
+    pinentry-curses
+    bitwarden-cli
+    jq
 
     # --- AI FHSEnv (ai-env) ---
     (pkgs.buildFHSEnv {
@@ -212,8 +217,21 @@ in
           "lang.toml",
           "lang.yaml",
           "lang.docker",
+          "lang.markdown",
         },
       } },
+    }
+  '';
+
+  xdg.configFile."nvim/lua/plugins/markdown.lua".text = ''
+    return {
+      {
+        "MeanderingProgrammer/render-markdown.nvim",
+        opts = {
+          file_types = { "markdown", "Avante" },
+        },
+        ft = { "markdown", "Avante" },
+      },
     }
   '';
 
