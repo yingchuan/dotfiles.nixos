@@ -267,25 +267,7 @@ in
   home.file.".gemini/GEMINI.md".text = ''
     # Global Personal Memory
 
-    ## Machine Environment
-    - **Model:** Lenovo ThinkPad T14s Gen 6
-    - **OS:** NixOS 26.05 (Unstable/Latest)
-    - **Architecture:** x86_64-linux
     - **Primary User:** richard
-
-    ## Workspace Info
-    - **Dotfiles Repository:** `/home/richard/dotfiles.nixos`
-    - **NixOS Configuration:** `~/dotfiles.nixos/hosts/thinkpad-t14s-gen6/configuration.nix`
-    - **Home Manager Configuration:** `~/dotfiles.nixos/hosts/thinkpad-t14s-gen6/home.nix`
-
-    ## Personal Preferences
-    - Use `builtins.concatStringsSep` for generating configuration files sensitive to leading whitespace (e.g., `.tmux.conf.local`).
-    - **ohmytmux Configuration Mandates:**
-        - Standard tmux/theme variables MUST NOT be prefixed with `# ` to be read as native settings.
-        - Shell functions and dispatch logic MUST be prefixed with `# ` starting at column 0 (no indentation) to support the `cut -c3-` extraction mechanism.
-        - Always append the `"$@"` dispatch line at the end of custom function blocks to enable execution.
-    - Prioritize `sudo nixos-rebuild switch --flake .#thinkpad-t14s-gen6` for system changes.
-    - Prioritize `home-manager switch --flake .#richard@thinkpad-t14s-gen6` for user-level changes.
   '';
 
   home.file.".tmux.conf.local".text = builtins.concatStringsSep "\n" [
@@ -366,6 +348,23 @@ in
         <edit name="lcdfilter" mode="assign"><const>lcddefault</const></edit>
       </match>
     </fontconfig>
+  '';
+
+  home.file.".config/containers/policy.json".text = ''
+    {
+        "default": [
+            {
+                "type": "insecureAcceptAnything"
+            }
+        ],
+        "transports":
+            {
+                "docker-daemon":
+                    {
+                        "": [{"type":"insecureAcceptAnything"}]
+                    }
+            }
+    }
   '';
 
   programs.home-manager.enable = true;
