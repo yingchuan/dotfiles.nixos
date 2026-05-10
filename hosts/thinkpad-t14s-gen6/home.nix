@@ -57,6 +57,7 @@ in
     marksman
     markdownlint-cli2
     go
+    wails
     gopls
     golangci-lint
     python3
@@ -268,6 +269,13 @@ in
     # Global Personal Memory
 
     - **Primary User:** richard
+    - **Rules:**
+      1. No guessing, must verify (禁止猜測 必須求證).
+         - Acknowledge unknowns: Inform the user when information is insufficient instead of making up answers.
+         - Tool-first: Always run tools to get real data before giving conclusions.
+         - Cite evidence: Answers must be based on actual file content or command output.
+      2. Language: All GEMINI.md files must be written in English.
+    - **Note:** This file is managed by Nix (Location: `~/dotfiles.nixos/hosts/thinkpad-t14s-gen6/home.nix`). Do not edit it directly.
   '';
 
   home.file.".tmux.conf.local".text = builtins.concatStringsSep "\n" [
