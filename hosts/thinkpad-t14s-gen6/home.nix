@@ -275,6 +275,7 @@ in
          - Tool-first: Always run tools to get real data before giving conclusions.
          - Cite evidence: Answers must be based on actual file content or command output.
       2. Language: All GEMINI.md files must be written in English.
+      3. Environment: Neovim/LazyVim configurations are managed by Nix. Do not modify `~/.config/nvim` directly.
     - **Note:** This file is managed by Nix (Location: `~/dotfiles.nixos/hosts/thinkpad-t14s-gen6/home.nix`). Do not edit it directly.
   '';
 
