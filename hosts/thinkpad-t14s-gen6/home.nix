@@ -59,6 +59,7 @@ in
     go
     wails
     gopls
+    gofumpt
     golangci-lint
     python3
     python312Packages.pynvim
