@@ -110,6 +110,7 @@
   environment.systemPackages = with pkgs; [
     vim
     wget
+    home-manager
     gnomeExtensions.kimpanel
     docker-compose
   ];
