@@ -20,6 +20,7 @@ in
     sarasa-gothic
     
     # Terminal & Shell Tools
+    google-chrome
     tmux
     jq
     fzf

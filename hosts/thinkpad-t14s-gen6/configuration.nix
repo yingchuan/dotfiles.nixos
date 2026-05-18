@@ -111,7 +111,6 @@
     vim
     wget
     gnomeExtensions.kimpanel
-    google-chrome
     docker-compose
   ];
 
