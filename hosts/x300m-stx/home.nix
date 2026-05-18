@@ -294,7 +294,7 @@ in
          - Cite evidence: Answers must be based on actual file content or command output.
       2. Language: All GEMINI.md files must be written in English.
       3. Environment: Neovim/LazyVim configurations are managed by Nix. Do not modify `~/.config/nvim` directly.
-    - **Note:** This file is managed by Nix (Location: `~/dotfiles.nixos/hosts/X300M-STX/home.nix`). Do not edit it directly.
+    - **Note:** This file is managed by Nix (Location: `~/dotfiles.nixos/hosts/x300m-stx/home.nix`). Do not edit it directly.
   '';
 
   home.file.".tmux.conf.local".text = builtins.concatStringsSep "\n" [

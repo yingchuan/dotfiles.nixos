@@ -27,11 +27,11 @@
         ];
       };
 
-      nixosConfigurations.X300M-STX = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.x300m-stx = nixpkgs.lib.nixosSystem {
         inherit system;
         specialArgs = { inherit inputs; };
         modules = [
-          ./hosts/X300M-STX/configuration.nix
+          ./hosts/x300m-stx/configuration.nix
         ];
       };
 
@@ -42,10 +42,10 @@
         modules = [ ./hosts/thinkpad-t14s-gen6/home.nix ];
       };
 
-      homeConfigurations."richard@X300M-STX" = home-manager.lib.homeManagerConfiguration {
+      homeConfigurations."richard@x300m-stx" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs = { inherit inputs; };
-        modules = [ ./hosts/X300M-STX/home.nix ];
+        modules = [ ./hosts/x300m-stx/home.nix ];
       };
     };
 }

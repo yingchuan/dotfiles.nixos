@@ -17,7 +17,7 @@
   # Use latest kernel
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  networking.hostName = "X300M-STX";
+  networking.hostName = "x300m-stx";
   networking.networkmanager.enable = true;
 
   time.timeZone = "Asia/Taipei";
