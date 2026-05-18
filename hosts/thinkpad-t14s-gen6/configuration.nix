@@ -60,6 +60,9 @@
 
   services.printing.enable = true;
 
+  # Enable the OpenSSH daemon.
+  services.openssh.enable = true;
+
   # Sound
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
