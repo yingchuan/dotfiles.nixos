@@ -91,6 +91,7 @@ in
         gnumake
         python3
         stdenv.cc.cc.lib
+        nsjail
       ];
       profile = ''
         export NPM_CONFIG_PREFIX=~/.npm-global
@@ -98,8 +99,8 @@ in
         export PATH=~/.npm-global/bin:$PATH
         export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
 
-        if ! command -v gemini &> /dev/null || ! command -v mem0 &> /dev/null; then
-            npm install -g @google/gemini-cli @mem0/cli --quiet
+        if ! command -v antigravity &> /dev/null || ! command -v gemini &> /dev/null; then
+            npm install -g @google/antigravity-cli @google/gemini-cli --quiet
         fi
       '';
       runScript = "bash"; 
