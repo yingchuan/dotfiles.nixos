@@ -96,11 +96,16 @@ in
       profile = ''
         export NPM_CONFIG_PREFIX=~/.npm-global
         mkdir -p ~/.npm-global/bin
-        export PATH=~/.npm-global/bin:$PATH
+        mkdir -p ~/.local/bin
+        export PATH=~/.local/bin:~/.npm-global/bin:$PATH
         export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
 
-        if ! command -v antigravity &> /dev/null || ! command -v gemini &> /dev/null; then
-            npm install -g @google/antigravity-cli @google/gemini-cli --quiet
+        if ! command -v agy &> /dev/null; then
+            curl -fsSL https://antigravity.google/cli/install.sh | bash
+        fi
+
+        if ! command -v gemini &> /dev/null; then
+            npm install -g @google/gemini-cli --quiet
         fi
       '';
       runScript = "bash"; 
