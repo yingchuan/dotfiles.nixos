@@ -303,6 +303,35 @@ in
     - **Note:** This file is managed by Nix (Location: `~/dotfiles.nixos/hosts/x300m-stx/home.nix`). Do not edit it directly.
   '';
 
+  home.file.".gemini/settings.json".text = ''
+    {
+      "security": {
+        "auth": {
+          "selectedType": "oauth-personal"
+        }
+      },
+      "general": {
+        "preferredEditor": "neovim"
+      },
+      "mcpServers": {
+        "deepwiki": {
+          "url": "https://mcp.deepwiki.com/mcp",
+          "type": "http"
+        }
+      }
+    }
+  '';
+
+  home.file.".gemini/antigravity-cli/mcp_config.json".text = ''
+    {
+      "mcpServers": {
+        "deepwiki": {
+          "serverUrl": "https://mcp.deepwiki.com/mcp"
+        }
+      }
+    }
+  '';
+
   home.file.".tmux.conf.local".text = builtins.concatStringsSep "\n" [
     "# : << 'EOF'"
     "set -g mouse on"
