@@ -159,7 +159,7 @@ in
     settings = {
       font-family = "JetBrainsMono Nerd Font";
       font-style = "Medium";
-      font-size = 14;
+      font-size = 18;
       background = "000000";
       foreground = "ffffff";
       cursor-color = "ffffff";
