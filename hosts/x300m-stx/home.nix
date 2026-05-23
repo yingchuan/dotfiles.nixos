@@ -8,6 +8,11 @@ in
   home.homeDirectory = "/home/richard";
   home.stateVersion = "26.05";
 
+  home.sessionPath = [
+    "$HOME/.local/bin"
+    "$HOME/.npm-global/bin"
+  ];
+
   nixpkgs.config.allowUnfree = true;
 
   home.packages = with pkgs; [
@@ -78,38 +83,6 @@ in
     pinentry-curses
     bitwarden-cli
     jq
-
-    # --- AI FHSEnv (ai-env) ---
-    (pkgs.buildFHSEnv {
-      name = "ai-env"; 
-      targetPkgs = pkgs: with pkgs; [
-        nodejs_24
-        git
-        curl
-        wget
-        gcc
-        gnumake
-        python3
-        stdenv.cc.cc.lib
-        nsjail
-      ];
-      profile = ''
-        export NPM_CONFIG_PREFIX=~/.npm-global
-        mkdir -p ~/.npm-global/bin
-        mkdir -p ~/.local/bin
-        export PATH=~/.local/bin:~/.npm-global/bin:$PATH
-        export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
-
-        if ! command -v agy &> /dev/null; then
-            curl -fsSL https://antigravity.google/cli/install.sh | bash
-        fi
-
-        if ! command -v gemini &> /dev/null; then
-            npm install -g @google/gemini-cli --quiet
-        fi
-      '';
-      runScript = "bash"; 
-    })
   ];
 
   services.ssh-agent.enable = true;
@@ -273,6 +246,8 @@ in
     };
 
     initContent = ''
+      unset __HM_SESS_VARS_SOURCED
+      . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
       export SSH_AUTH_SOCK="/run/user/1000/ssh-agent"
       if [ -z "$(ssh-add -l | grep 'yingchuan')" ]; then
         ssh-add ~/.ssh/yingchuan 2>/dev/null

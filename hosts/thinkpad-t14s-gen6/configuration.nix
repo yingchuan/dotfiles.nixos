@@ -93,6 +93,7 @@
 
   programs.firefox.enable = true;
   programs.zsh.enable = true;
+  programs.nix-ld.enable = true;
   # Steam & Gaming Configuration
   programs.steam = {
     enable = true;
@@ -118,4 +119,13 @@
   system.stateVersion = "26.05";
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+  # Enable Ollama service with AMD GPU acceleration
+  services.ollama = {
+    enable = true;
+    package = pkgs.ollama-rocm;
+  };
+
+  # Enable Open WebUI for Ollama (ChatGPT-like GUI)
+  services.open-webui.enable = true;
 }
