@@ -16,6 +16,7 @@ in
   nixpkgs.config.allowUnfree = true;
 
   home.packages = with pkgs; [
+    aider-chat
     # Fonts
     noto-fonts
     noto-fonts-cjk-sans
