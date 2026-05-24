@@ -31,6 +31,13 @@ This document serves as the primary context for Gemini CLI when working in this 
 - **32-bit Support:** Enabled via `hardware.graphics.enable32Bit`.
 - **Unfree Software:** Must have `nixpkgs.config.allowUnfree = true` in `configuration.nix` and `home.nix`.
 
+## Development Runtimes & Tools
+
+### JavaScript/TypeScript Runtime
+- **Bun** is installed and used as the primary runtime, replacing Node.js for general development tasks.
+- **OpenCode** is specifically configured to run using **Bun** (e.g., via `bunx` or `bun run`) instead of Node.js.
+
 ## Versioning
 - **system.stateVersion:** 26.05
 - **home.stateVersion:** 26.05
+

@@ -33,7 +33,7 @@ This setup is tailored for my development workflow on the **Lenovo ThinkPad T14s
 - **Editor:** Neovim, powered by a heavily customized [LazyVim](https://www.lazyvim.org/) starter configuration. Includes specialized setups for markdown rendering (`render-markdown.nvim`), SQLite integration, and the Tokyo Night theme.
 - **Terminal Multiplexer:** Tmux, utilizing the [gpakosz/.tmux](https://github.com/gpakosz/.tmux) (ohmytmux) framework with a custom Tokyo Night color palette and custom status bar functions.
 - **Shell:** Zsh with `oh-my-zsh`, integrated with `fzf` for fuzzy finding and enhanced completions.
-- **Languages & LSPs:** Pre-configured environments for Go, Rust, Python, Node.js, Zig, and C/C++, managed declaratively.
+- **Languages & LSPs:** Pre-configured environments for Go, Rust, Python, Bun (installed as the primary runtime to replace Node.js; OpenCode is run using Bun), Zig, and C/C++, managed declaratively.
 - **Terminal Emulator:** Ghostty with JetBrainsMono Nerd Font.
 
 ### AI Integration
