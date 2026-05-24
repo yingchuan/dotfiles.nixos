@@ -17,6 +17,7 @@ in
 
   home.packages = with pkgs; [
     aider-chat
+    bun
     # Fonts
     noto-fonts
     noto-fonts-cjk-sans
