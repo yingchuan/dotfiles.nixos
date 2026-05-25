@@ -11,6 +11,7 @@ in
   home.sessionPath = [
     "$HOME/.local/bin"
     "$HOME/.npm-global/bin"
+    "$HOME/.bun/bin"
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -59,7 +60,7 @@ in
     pkg-config
     stdenv.cc.cc.lib
 
-    # Language Servers & Runtimes
+    # Language Servers & Runtimes (Note: Bun is the primary runtime and OpenCode uses Bun; Node.js is kept for LSPs and Neovim)
     nodejs
     prettier
     marksman
@@ -232,6 +233,69 @@ in
         },
         ft = { "markdown", "Avante" },
       },
+    }
+  '';
+
+  # OpenCode & oh-my-openagent Configs
+  xdg.configFile."opencode/opencode.jsonc".text = ''
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "plugin": ["oh-my-openagent@latest"],
+      "provider": {
+        "dashscope": {
+          "npm": "@ai-sdk/openai-compatible",
+          "name": "Alibaba Cloud DashScope",
+          "options": {
+            "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "apiKey": "''${env.DASHSCOPE_API_KEY}"
+          },
+          "models": {
+            "qwen2.5-coder-32b-instruct": {
+              "name": "Qwen 2.5 Coder 32B Instruct"
+            },
+            "deepseek-v3": {
+              "name": "DeepSeek V3"
+            },
+            "deepseek-r1": {
+              "name": "DeepSeek R1"
+            }
+          }
+        }
+      }
+    }
+  '';
+
+  xdg.configFile."opencode/oh-my-openagent.json".text = ''
+    {
+      "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
+      "agents": {
+        "hephaestus": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
+        "oracle": { "model": "dashscope/deepseek-r1" },
+        "librarian": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
+        "explore": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
+        "multimodal-looker": { "model": "dashscope/deepseek-v3" },
+        "prometheus": { "model": "dashscope/deepseek-v3" },
+        "metis": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
+        "momus": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
+        "atlas": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
+        "sisyphus-junior": { "model": "dashscope/deepseek-v3" }
+      },
+      "categories": {
+        "visual-engineering": { "model": "dashscope/deepseek-v3" },
+        "ultrabrain": { "model": "dashscope/deepseek-r1" },
+        "deep": { "model": "dashscope/deepseek-r1" },
+        "artistry": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
+        "quick": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
+        "unspecified-low": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
+        "unspecified-high": { "model": "dashscope/deepseek-v3" },
+        "writing": { "model": "dashscope/deepseek-v3" }
+      }
+    }
+  '';
+
+  xdg.configFile."opencode/tui.json".text = ''
+    {
+      "plugin": ["oh-my-openagent/tui"]
     }
   '';
 
@@ -415,5 +479,15 @@ in
     "org/gnome/mutter" = {
       experimental-features = [ "scale-monitor-framebuffer" ];
     };
+  };
+
+  # Automatically install global Bun packages (e.g. OpenCode CLI) on home-manager activation
+  home.activation = {
+    installGlobalBunPackages = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      if command -v bun >/dev/null; then
+        echo "Installing/Updating global Bun packages..."
+        $DRY_RUN_CMD bun install -g opencode-ai
+      fi
+    '';
   };
 }

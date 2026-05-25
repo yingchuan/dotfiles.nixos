@@ -33,9 +33,11 @@ This document serves as the primary context for Gemini CLI when working in this 
 
 ## Development Runtimes & Tools
 
-### JavaScript/TypeScript Runtime
-- **Bun** is installed and used as the primary runtime, replacing Node.js for general development tasks.
-- **OpenCode** is specifically configured to run using **Bun** (e.g., via `bunx` or `bun run`) instead of Node.js.
+### JavaScript/TypeScript & OpenCode Management
+- **Bun** is the primary runtime for general JS/TS development and OpenCode execution.
+- **Node.js** package is kept in Nix configuration *only* for LSPs (like Pyright) and Neovim integrations (`withNodeJs = true`), not as the primary user-facing runtime.
+- **OpenCode & oh-my-openagent Configurations** are managed declaratively in Nix via `hosts/<hostname>/home.nix` under `xdg.configFile` (writing to `opencode/opencode.jsonc`, `opencode/oh-my-openagent.json`, and `opencode/tui.json`). **Do not edit files in `~/.config/opencode/` directly.**
+- **Global Bun Packages** (like `opencode-ai` CLI) are installed/updated automatically during Home Manager activation via `home.activation.installGlobalBunPackages` script in `home.nix`.
 
 ## Versioning
 - **system.stateVersion:** 26.05
