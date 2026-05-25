@@ -26,7 +26,7 @@ in
     noto-fonts-color-emoji
     nerd-fonts.jetbrains-mono
     sarasa-gothic
-    
+
     # Terminal & Shell Tools
     google-chrome
     tmux
@@ -41,7 +41,7 @@ in
     bc
     htop
     file
-    
+
     # Neovim & Development Dependencies
     git
     lazygit
@@ -245,21 +245,32 @@ in
           "npm": "@ai-sdk/openai-compatible",
           "name": "Alibaba Cloud DashScope",
           "options": {
-            "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            // 🇨🇳 國內站端點（若為國際站帳號請改為 dashscope-intl.aliyuncs.com）
+            "baseURL": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
             "apiKey": "''${env.DASHSCOPE_API_KEY}"
           },
           "models": {
-            "qwen3.7-max": {
-              "name": "Qwen 3.7 Max"
+            // 🧠 旗艦智力：用於複雜重構與創意寫作
+            "qwen-max-latest": {
+              "name": "Qwen Max (Flagship)"
             },
-            "qwen3.6-flash": {
-              "name": "Qwen 3.6 Flash"
+            // ⚡ 極致性價比：用於日常編碼、補全、簡單問答
+            "qwen-turbo-latest": {
+              "name": "Qwen Turbo (Fast & Cheap)",
+              "options": {
+                "maxTokens": 4096 
+              }
             },
-            "deepseek-v4": {
-              "name": "DeepSeek V4"
+            // 🔥 標準推理：用於 Code Review、文檔生成、視覺理解
+            "deepseek-v3": {
+              "name": "DeepSeek V3 (Standard)"
             },
-            "deepseek-v4-reasoner": {
-              "name": "DeepSeek V4 Reasoner"
+            // 💡 深度思考：僅用於極難算法與跨檔案架構設計
+            "deepseek-r1": {
+              "name": "DeepSeek R1 (Reasoner)",
+              "options": {
+                "maxTokens": 8192
+              }
             }
           }
         }
@@ -268,29 +279,61 @@ in
   '';
 
   xdg.configFile."opencode/oh-my-openagent.json".text = ''
-    {
+      {
       "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
       "agents": {
-        "hephaestus": { "model": "dashscope/qwen3.7-max" },
-        "oracle": { "model": "dashscope/deepseek-v4-reasoner" },
-        "librarian": { "model": "dashscope/qwen3.6-flash" },
-        "explore": { "model": "dashscope/qwen3.6-flash" },
-        "multimodal-looker": { "model": "dashscope/deepseek-v4" },
-        "prometheus": { "model": "dashscope/deepseek-v4" },
-        "metis": { "model": "dashscope/qwen3.7-max" },
-        "momus": { "model": "dashscope/qwen3.6-flash" },
-        "atlas": { "model": "dashscope/qwen3.6-flash" },
-        "sisyphus-junior": { "model": "dashscope/deepseek-v4" }
+        // 🏗️ 核心架構與複雜重構：保留最強模型
+        "hephaestus": { "model": "dashscope/qwen-max-latest" },
+    
+        // 🔍 程式碼審查與決策：標準版足夠，無需頂級推理
+        "oracle": { "model": "dashscope/deepseek-v3" },
+    
+        // 📚 知識檢索與文件生成：Turbo 性價比最高
+        "librarian": { "model": "dashscope/qwen-turbo-latest" },
+        "explore": { "model": "dashscope/qwen-turbo-latest" },
+    
+        // 👁️ 多模態與視覺理解：標準版即可勝任
+        "multimodal-looker": { "model": "dashscope/deepseek-v3" },
+    
+        // 🔥 監控與日誌分析：高頻低複雜度任務，必須用 Turbo
+        "prometheus": { "model": "dashscope/qwen-turbo-latest" },
+    
+        // 🗂️ 上下文管理與記憶：純結構化處理，Turbo 足矣
+        "metis": { "model": "dashscope/qwen-turbo-latest" },
+    
+        // 🎭 測試與邊界案例生成：創意型但不需頂級推理
+        "momus": { "model": "dashscope/qwen-turbo-latest" },
+    
+        // 🧱 基礎構建與樣板生成：重複性工作，Turbo 最省錢
+        "atlas": { "model": "dashscope/qwen-turbo-latest" },
+    
+        // 🪨 子任務執行與工具調用：絕對不要用 Reasoner
+        "sisyphus-junior": { "model": "dashscope/qwen-turbo-latest" }
       },
       "categories": {
-        "visual-engineering": { "model": "dashscope/deepseek-v4" },
-        "ultrabrain": { "model": "dashscope/deepseek-v4-reasoner" },
-        "deep": { "model": "dashscope/deepseek-v4-reasoner" },
-        "artistry": { "model": "dashscope/qwen3.7-max" },
-        "quick": { "model": "dashscope/qwen3.6-flash" },
-        "unspecified-low": { "model": "dashscope/qwen3.6-flash" },
-        "unspecified-high": { "model": "dashscope/deepseek-v4" },
-        "writing": { "model": "dashscope/deepseek-v4" }
+        // 🎨 前端/視覺工程：標準版平衡品質與成本
+        "visual-engineering": { "model": "dashscope/deepseek-v3" },
+    
+        // 🧩 極難算法/數學證明：唯一需要 Reasoner 的場景
+        "ultrabrain": { "model": "dashscope/deepseek-r1" },
+    
+        // 🔬 深度分析與跨檔案重構：保留 Reasoner，建議手動觸發
+        "deep": { "model": "dashscope/deepseek-r1" },
+    
+        // ✍️ 創意寫作與文案：Max 模型語感更好，值得投資
+        "artistry": { "model": "dashscope/qwen-max-latest" },
+    
+        // ⚡ 快速補全與簡單修復：Turbo 專屬領域
+        "quick": { "model": "dashscope/qwen-turbo-latest" },
+    
+        // 📉 未指定低優先級：預設走最便宜的路線
+        "unspecified-low": { "model": "dashscope/qwen-turbo-latest" },
+    
+        // 📈 未指定高優先級：標準版兜底，避免意外觸發 Reasoner
+        "unspecified-high": { "model": "dashscope/deepseek-v3" },
+    
+        // 📝 技術文檔與註釋：標準版足夠清晰
+        "writing": { "model": "dashscope/deepseek-v3" }
       }
     }
   '';
@@ -306,7 +349,7 @@ in
     enableCompletion = true;
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
-    
+
     oh-my-zsh = {
       enable = true;
       plugins = [ "git" "sudo" "fzf" ];
@@ -325,12 +368,13 @@ in
 
   programs.tmux.enable = false;
 
-  home.file.".tmux.conf".source = pkgs.fetchFromGitHub {
-    owner = "gpakosz";
-    repo = ".tmux";
-    rev = "master";
-    sha256 = "sha256-nXm664l84YSwZeRM4Hsweqgz+OlpyfwXcgEdyNGhaGA=";
-  } + "/.tmux.conf";
+  home.file.".tmux.conf".source = pkgs.fetchFromGitHub
+    {
+      owner = "gpakosz";
+      repo = ".tmux";
+      rev = "master";
+      sha256 = "sha256-nXm664l84YSwZeRM4Hsweqgz+OlpyfwXcgEdyNGhaGA=";
+    } + "/.tmux.conf";
 
   home.file.".gemini/settings.json".text = ''
     {
@@ -471,7 +515,7 @@ in
 
   # Automatically install global Bun packages (e.g. OpenCode CLI) on home-manager activation
   home.activation = {
-    installGlobalBunPackages = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    installGlobalBunPackages = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       if command -v bun >/dev/null; then
         echo "Installing/Updating global Bun packages..."
         $DRY_RUN_CMD bun install -g opencode-ai

@@ -16,7 +16,8 @@
         inherit system;
         config.allowUnfree = true;
       };
-    in {
+    in
+    {
       # 系統層級配置
       nixosConfigurations.thinkpad-t14s-gen6 = nixpkgs.lib.nixosSystem {
         inherit system;
