@@ -19,11 +19,20 @@ This setup is tailored for my development workflow on the **Lenovo ThinkPad T14s
 ~/dotfiles.nixos/
 ├── flake.nix                                # The entry point for the Nix Flake.
 ├── flake.lock                               # Locked dependencies for reproducibility.
-├── GEMINI.md                                # Context guidelines for the Gemini CLI agent.
+├── AGENTS.md                                # Cross-tool AI agent context (Linux Foundation standard).
 └── hosts/
-    └── thinkpad-t14s-gen6/
-        ├── configuration.nix                # System-level NixOS configuration.
-        ├── home.nix                         # User-level Home Manager configuration.
+    ├── shared/
+    │   ├── home.nix                         # Shared Home Manager configuration (all hosts).
+    │   ├── system-module.nix                # Combines all shared system sub-modules.
+    │   ├── locale.nix                       # Timezone, locale, Fcitx5, keyboard.
+    │   ├── desktop.nix                      # GNOME, GDM, PipeWire, printing.
+    │   ├── podman.nix                       # Podman & Docker compatibility.
+    │   └── steam.nix                        # Steam & 32-bit graphics.
+    ├── thinkpad-t14s-gen6/
+    │   ├── configuration.nix                # Minimal system config (imports shared + Ollama).
+    │   └── hardware-configuration.nix       # Auto-generated hardware specifics.
+    └── x300m-stx/
+        ├── configuration.nix                # Minimal system config (imports shared).
         └── hardware-configuration.nix       # Auto-generated hardware specifics.
 ```
 
