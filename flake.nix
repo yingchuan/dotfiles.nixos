@@ -12,7 +12,6 @@
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
     let
       system = "x86_64-linux";
-      # 建立一個允許非自由軟體的 pkgs 實例
       pkgs = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
@@ -35,17 +34,24 @@
         ];
       };
 
-      # 用戶層級配置
+      # 用戶層級配置 (共用 hosts/shared/home.nix，每台 host 可疊加差異)
       homeConfigurations."richard@thinkpad-t14s-gen6" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs = { inherit inputs; };
-        modules = [ ./hosts/thinkpad-t14s-gen6/home.nix ];
+        modules = [
+          ./hosts/shared/home.nix
+        ];
       };
 
       homeConfigurations."richard@x300m-stx" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs = { inherit inputs; };
-        modules = [ ./hosts/x300m-stx/home.nix ];
+        modules = [
+          ./hosts/shared/home.nix
+          {
+            programs.ghostty.settings.font-size = 18;
+          }
+        ];
       };
     };
 }

@@ -85,7 +85,6 @@ in
     gdb
     pinentry-curses
     bitwarden-cli
-    jq
   ];
 
   services.ssh-agent.enable = true;
@@ -135,7 +134,7 @@ in
     settings = {
       font-family = "JetBrainsMono Nerd Font";
       font-style = "Medium";
-      font-size = 18;
+      font-size = 14;
       background = "000000";
       foreground = "ffffff";
       cursor-color = "ffffff";
@@ -332,20 +331,6 @@ in
     rev = "master";
     sha256 = "sha256-nXm664l84YSwZeRM4Hsweqgz+OlpyfwXcgEdyNGhaGA=";
   } + "/.tmux.conf";
-
-  home.file.".gemini/GEMINI.md".text = ''
-    # Global Personal Memory
-
-    - **Primary User:** richard
-    - **Rules:**
-      1. No guessing, must verify (禁止猜測 必須求證).
-         - Acknowledge unknowns: Inform the user when information is insufficient instead of making up answers.
-         - Tool-first: Always run tools to get real data before giving conclusions.
-         - Cite evidence: Answers must be based on actual file content or command output.
-      2. Language: All GEMINI.md files must be written in English.
-      3. Environment: Neovim/LazyVim configurations are managed by Nix. Do not modify `~/.config/nvim` directly.
-    - **Note:** This file is managed by Nix (Location: `~/dotfiles.nixos/hosts/x300m-stx/home.nix`). Do not edit it directly.
-  '';
 
   home.file.".gemini/settings.json".text = ''
     {
