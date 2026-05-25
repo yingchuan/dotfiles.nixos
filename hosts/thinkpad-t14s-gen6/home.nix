@@ -250,14 +250,17 @@ in
             "apiKey": "''${env.DASHSCOPE_API_KEY}"
           },
           "models": {
-            "qwen2.5-coder-32b-instruct": {
-              "name": "Qwen 2.5 Coder 32B Instruct"
+            "qwen3.7-max": {
+              "name": "Qwen 3.7 Max"
             },
-            "deepseek-v3": {
-              "name": "DeepSeek V3"
+            "qwen3.6-flash": {
+              "name": "Qwen 3.6 Flash"
             },
-            "deepseek-r1": {
-              "name": "DeepSeek R1"
+            "deepseek-v4": {
+              "name": "DeepSeek V4"
+            },
+            "deepseek-v4-reasoner": {
+              "name": "DeepSeek V4 Reasoner"
             }
           }
         }
@@ -269,26 +272,26 @@ in
     {
       "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
       "agents": {
-        "hephaestus": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
-        "oracle": { "model": "dashscope/deepseek-r1" },
-        "librarian": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
-        "explore": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
-        "multimodal-looker": { "model": "dashscope/deepseek-v3" },
-        "prometheus": { "model": "dashscope/deepseek-v3" },
-        "metis": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
-        "momus": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
-        "atlas": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
-        "sisyphus-junior": { "model": "dashscope/deepseek-v3" }
+        "hephaestus": { "model": "dashscope/qwen3.7-max" },
+        "oracle": { "model": "dashscope/deepseek-v4-reasoner" },
+        "librarian": { "model": "dashscope/qwen3.6-flash" },
+        "explore": { "model": "dashscope/qwen3.6-flash" },
+        "multimodal-looker": { "model": "dashscope/deepseek-v4" },
+        "prometheus": { "model": "dashscope/deepseek-v4" },
+        "metis": { "model": "dashscope/qwen3.7-max" },
+        "momus": { "model": "dashscope/qwen3.6-flash" },
+        "atlas": { "model": "dashscope/qwen3.6-flash" },
+        "sisyphus-junior": { "model": "dashscope/deepseek-v4" }
       },
       "categories": {
-        "visual-engineering": { "model": "dashscope/deepseek-v3" },
-        "ultrabrain": { "model": "dashscope/deepseek-r1" },
-        "deep": { "model": "dashscope/deepseek-r1" },
-        "artistry": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
-        "quick": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
-        "unspecified-low": { "model": "dashscope/qwen2.5-coder-32b-instruct" },
-        "unspecified-high": { "model": "dashscope/deepseek-v3" },
-        "writing": { "model": "dashscope/deepseek-v3" }
+        "visual-engineering": { "model": "dashscope/deepseek-v4" },
+        "ultrabrain": { "model": "dashscope/deepseek-v4-reasoner" },
+        "deep": { "model": "dashscope/deepseek-v4-reasoner" },
+        "artistry": { "model": "dashscope/qwen3.7-max" },
+        "quick": { "model": "dashscope/qwen3.6-flash" },
+        "unspecified-low": { "model": "dashscope/qwen3.6-flash" },
+        "unspecified-high": { "model": "dashscope/deepseek-v4" },
+        "writing": { "model": "dashscope/deepseek-v4" }
       }
     }
   '';
