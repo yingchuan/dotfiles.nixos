@@ -18,7 +18,15 @@
   networking.networkmanager.enable = true;
 
   # SSH
-  services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    settings = {
+      PermitRootLogin = "no";
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+      AllowUsers = [ "richard" ];
+    };
+  };
 
   # User Account
   users.users."richard" = {

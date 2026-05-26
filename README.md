@@ -7,10 +7,10 @@ This setup is tailored for my development workflow on the **Lenovo ThinkPad T14s
 ## 🚀 System Architecture
 
 - **OS:** NixOS (Unstable channel)
-- **Host:** `thinkpad-t14s-gen6`
+- **Hosts:** `thinkpad-t14s-gen6` (primary, AMD, Ollama + Open WebUI) and `x300m-stx` (secondary)
 - **Architecture:** `x86_64-linux`
 - **Desktop Environment:** GNOME (Wayland)
-- **Container Engine:** Podman (with Docker compatibility and socket enabled)
+- **Container Engine:** Podman (Docker-compatible CLI; system socket disabled for security)
 - **Input Method:** Fcitx5 (with Chewing/Zhuyin and GTK/Qt support)
 
 ## 📁 Repository Structure
@@ -29,7 +29,7 @@ This setup is tailored for my development workflow on the **Lenovo ThinkPad T14s
     │   ├── podman.nix                       # Podman & Docker compatibility.
     │   └── steam.nix                        # Steam & 32-bit graphics.
     ├── thinkpad-t14s-gen6/
-    │   ├── configuration.nix                # Minimal system config (imports shared + Ollama).
+    │   ├── configuration.nix                # Minimal system config (imports shared + Ollama/Open WebUI).
     │   └── hardware-configuration.nix       # Auto-generated hardware specifics.
     └── x300m-stx/
         ├── configuration.nix                # Minimal system config (imports shared).
@@ -52,20 +52,25 @@ The environment includes a custom FHS (Filesystem Hierarchy Standard) environmen
 - Steam is enabled at the system level with dedicated firewall rules opened for Remote Play and Local Network Game Transfers.
 - Full 32-bit graphics support is enabled.
 
+### Security
+- **SSH:** Hardened — root login disabled, password authentication disabled, only the `richard` user is permitted.
+- **AI Services:** Ollama and Open WebUI (ThinkPad host only) are bound to `127.0.0.1` and not exposed on any external interface.
+- **Containers:** Podman's Docker-compatible socket is not exposed system-wide, preventing privilege escalation via `/var/run/docker.sock`.
+
 ## ⚙️ How to Apply Configurations
 
 Since this is a Flake-based setup, applying changes is straightforward. 
 
 **For System-level changes (requires root):**
-Modify `hosts/thinkpad-t14s-gen6/configuration.nix`, then run:
+Modify `hosts/<hostname>/configuration.nix`, then run:
 ```bash
-sudo nixos-rebuild switch --flake .#thinkpad-t14s-gen6
+sudo nixos-rebuild switch --flake .#<hostname>
 ```
 
 **For User-level changes (no root required):**
-Modify `hosts/thinkpad-t14s-gen6/home.nix`, then run:
+Modify `hosts/shared/home.nix` (or host-specific overrides in `flake.nix`), then run:
 ```bash
-home-manager switch --flake .#richard@thinkpad-t14s-gen6
+home-manager switch --flake .#richard@<hostname>
 ```
 
 ## 📝 Configuration Quirks & Notes
