@@ -458,6 +458,15 @@ in
             },
             "deepseek-v3.2": {
               "name": "DeepSeek V3.2"
+            },
+            "deepseek-v4-pro": {
+              "name": "DeepSeek V4 Pro (1M context, frontier reasoning)",
+              "options": {
+                "thinking": {
+                  "type": "enabled",
+                  "budgetTokens": 16384
+                }
+              }
             }
           }
         }
@@ -470,7 +479,7 @@ in
     {
       "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
       "agents": {
-        "sisyphus": { "model": "bailian-payg/qwen3.7-max" },
+        "sisyphus": { "model": "bailian-payg/deepseek-v4-pro" },
         "prometheus": { "model": "bailian-payg/qwen3-max" },
         "atlas": { "model": "bailian-payg/qwen3.6-plus" },
         "oracle": { "model": "bailian-payg/deepseek-v3.2" },
