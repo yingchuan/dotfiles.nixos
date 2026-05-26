@@ -545,11 +545,6 @@ in
           "type": "local",
           "command": ["npx", "-y", "@modelcontextprotocol/server-puppeteer"],
           "enabled": true
-        },
-        "memory": {
-          "type": "local",
-          "command": ["npx", "-y", "@modelcontextprotocol/server-memory"],
-          "enabled": true
         }
       }
     }
