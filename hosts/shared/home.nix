@@ -258,6 +258,56 @@ in
     '';
   };
 
+  programs.newsboat = {
+    enable = true;
+    autoReload = true;
+    urls = [
+      { url = "https://hnrss.org/best"; tags = [ "tech" "news" ]; title = "Hacker News (Best)"; }
+      { url = "https://hnrss.org/frontpage"; tags = [ "tech" "news" ]; title = "Hacker News (Frontpage)"; }
+      { url = "https://lobste.rs/rss"; tags = [ "tech" "dev" ]; title = "Lobsters"; }
+      { url = "https://simonwillison.net/atom/entries/"; tags = [ "tech" "ai" ]; title = "Simon Willison"; }
+      { url = "https://jvns.ca/atom.xml"; tags = [ "tech" "linux" ]; title = "Julia Evans (b0rk)"; }
+      { url = "https://nixos.org/blog/announcements-rss.xml"; tags = [ "linux" "nixos" ]; title = "NixOS Blog"; }
+      { url = "https://lwn.net/headlines/rss"; tags = [ "linux" "news" ]; title = "LWN.net"; }
+      { url = "https://www.phoronix.com/rss.php"; tags = [ "linux" "hardware" ]; title = "Phoronix"; }
+      { url = "https://deepmind.google/blog/rss.xml"; tags = [ "ai" "research" ]; title = "Google DeepMind"; }
+      { url = "https://openai.com/blog/rss.xml"; tags = [ "ai" "research" ]; title = "OpenAI Blog"; }
+      { url = "https://huggingface.co/blog/feed.xml"; tags = [ "ai" "dev" ]; title = "Hugging Face Blog"; }
+      { url = "https://blog.cloudflare.com/rss/"; tags = [ "tech" "infra" ]; title = "Cloudflare Blog"; }
+      { url = "https://github.blog/feed/"; tags = [ "tech" "dev" ]; title = "GitHub Blog"; }
+      { url = "https://www.ithome.com.tw/rss"; tags = [ "taiwan" "news" ]; title = "iThome"; }
+      { url = "https://www.inside.com.tw/feed"; tags = [ "taiwan" "news" ]; title = "INSIDE"; }
+    ];
+
+    extraConfig = ''
+      # 基本介面顏色
+      color background          default   default
+      color listnormal          default   default
+      color listfocus           black     magenta   bold
+      color listfocus_unread    black     magenta   bold
+      color listnormal_unread   cyan      default   bold
+      
+      # 頂部/底部資訊列
+      color info                cyan      black     reverse
+      
+      # 文章內容配色
+      color article             default   default
+      
+      # 快捷鍵提示列 (自訂突顯按鍵)
+      color hint-key            black     cyan      bold
+      color hint-separator      black     cyan
+      color hint-description    white     cyan
+
+      # 列表排版優化 (加入分隔線與呼吸空間)
+      feedlist-format "%4i %n %11u │ %t"
+      articlelist-format "%4i %f %D │ %t"
+      # 針對文章內的特定標籤上色 (Highlight)
+      highlight article "^(Title):.*$" blue default bold
+      highlight article "https?://[^ ]+" cyan default underline
+      highlight article "\\[image\\ [0-9]+\\]" green default
+    '';
+  };
+
   programs.tmux.enable = false;
 
   home.file.".tmux.conf".source = pkgs.fetchFromGitHub
@@ -282,6 +332,16 @@ in
         "deepwiki": {
           "url": "https://mcp.deepwiki.com/mcp",
           "type": "http"
+        },
+        "puppeteer": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+          "type": "stdio"
+        },
+        "memory": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-memory"],
+          "type": "stdio"
         }
       }
     }
@@ -292,6 +352,14 @@ in
       "mcpServers": {
         "deepwiki": {
           "serverUrl": "https://mcp.deepwiki.com/mcp"
+        },
+        "puppeteer": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+        },
+        "memory": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-memory"]
         }
       }
     }
@@ -471,7 +539,19 @@ in
           }
         }
       },
-      "plugin": ["oh-my-openagent"]
+      "plugin": ["oh-my-openagent"],
+      "mcp": {
+        "puppeteer": {
+          "type": "local",
+          "command": ["npx", "-y", "@modelcontextprotocol/server-puppeteer"],
+          "enabled": true
+        },
+        "memory": {
+          "type": "local",
+          "command": ["npx", "-y", "@modelcontextprotocol/server-memory"],
+          "enabled": true
+        }
+      }
     }
   '';
 
