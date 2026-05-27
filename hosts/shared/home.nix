@@ -544,7 +544,11 @@ in
         "puppeteer": {
           "type": "local",
           "command": ["npx", "-y", "@modelcontextprotocol/server-puppeteer"],
-          "enabled": true
+          "enabled": true,
+          "environment": {
+            "PUPPETEER_LAUNCH_OPTIONS": "{\"executablePath\": \"${pkgs.google-chrome}/bin/google-chrome-stable\", \"args\": [\"--no-sandbox\", \"--disable-setuid-sandbox\", \"--disable-dev-shm-usage\"]}",
+            "ALLOW_DANGEROUS": "true"
+          }
         }
       }
     }
