@@ -30,6 +30,8 @@ flake.nix hosts/
 - Nix files: one line per brace, two-space indent.
 - All `${self}` / `inputs` references only in `flake.nix`; modules get values via `specialArgs`.
 - Home-manager configs are shared: per-host overrides happen inline in `flake.nix`.
+- **Keep code clean** — no leftover whitespace, unused imports, or commented-out dead code.
+- **Always format after changes** — run formatter on every modified file before committing.
 
 ## Critical Rules
 - **Do NOT edit `~/.config/opencode/` directly.** It's deployed from `hosts/shared/home.nix`.
