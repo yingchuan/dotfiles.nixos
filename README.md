@@ -56,7 +56,7 @@ The environment includes a custom FHS (Filesystem Hierarchy Standard) environmen
 Example setup in `hosts/shared/home.nix`:
 ```nix
 programs.zsh.shellAliases = {
-  claude = "npx -y @anthropic-ai/claude-code";
+  claude = "bunx @anthropic-ai/claude-code";
 };
 ```
 

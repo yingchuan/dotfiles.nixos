@@ -244,7 +244,7 @@ in
     syntaxHighlighting.enable = true;
 
     shellAliases = {
-      claude = "npx -y @anthropic-ai/claude-code";
+      claude = "bunx @anthropic-ai/claude-code";
     };
 
     oh-my-zsh = {
