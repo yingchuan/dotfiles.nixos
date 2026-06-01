@@ -347,11 +347,6 @@ in
           "command": "npx",
           "args": ["-y", "@modelcontextprotocol/server-memory"],
           "type": "stdio"
-        },
-        "mem0": {
-          "command": "node",
-          "args": ["/home/richard/mcp-mem0/index.js"],
-          "type": "stdio"
         }
       }
     }
@@ -370,10 +365,6 @@ in
         "memory": {
           "command": "npx",
           "args": ["-y", "@modelcontextprotocol/server-memory"]
-        },
-        "mem0": {
-          "command": "node",
-          "args": ["/home/richard/mcp-mem0/index.js"]
         }
       }
     }
@@ -392,10 +383,6 @@ in
         "memory": {
           "command": "npx",
           "args": ["-y", "@modelcontextprotocol/server-memory"]
-        },
-        "mem0": {
-          "command": "node",
-          "args": ["/home/richard/mcp-mem0/index.js"]
         }
       }
     }
