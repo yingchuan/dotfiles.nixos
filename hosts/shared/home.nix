@@ -243,6 +243,10 @@ in
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
 
+    shellAliases = {
+      claude = "npx -y @anthropic-ai/claude-code";
+    };
+
     oh-my-zsh = {
       enable = true;
       plugins = [ "git" "sudo" "fzf" ];
@@ -616,10 +620,8 @@ in
   # Automatically install global Bun packages (e.g. OpenCode CLI) on home-manager activation
   home.activation = {
     installGlobalBunPackages = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      if command -v bun >/dev/null; then
-        echo "Installing/Updating global Bun packages..."
-        $DRY_RUN_CMD bun install -g opencode-ai
-      fi
+      echo "Installing/Updating global Bun packages..."
+      $DRY_RUN_CMD ${pkgs.bun}/bin/bun install -g opencode-ai
     '';
   };
 

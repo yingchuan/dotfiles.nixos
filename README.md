@@ -48,6 +48,18 @@ This setup is tailored for my development workflow on the **Lenovo ThinkPad T14s
 ### AI Integration
 The environment includes a custom FHS (Filesystem Hierarchy Standard) environment (`ai-env`) specifically designed to run AI CLIs like `@google/gemini-cli` and `@mem0/cli` seamlessly within NixOS, handling necessary NPM global paths and dynamic library linking.
 
+### AI CLIs & Node.js Global Packages
+**⚠️ Critical Rule for NixOS:** Do NOT use `npm install -g <package>` to install global CLI tools (like Claude Code). Because NixOS enforces a read-only root and strict FHS conventions, global NPM installations are notoriously problematic and can pollute the environment.
+
+**Best Practice:** Use `npx` (or `bunx`) via shell aliases to run Node-based AI tools dynamically. This guarantees you are always using the latest rapid updates from AI vendors (like Anthropic) without breaking the declarative NixOS philosophy.
+
+Example setup in `hosts/shared/home.nix`:
+```nix
+programs.zsh.shellAliases = {
+  claude = "npx -y @anthropic-ai/claude-code";
+};
+```
+
 ### Gaming
 - Steam is enabled at the system level with dedicated firewall rules opened for Remote Play and Local Network Game Transfers.
 - Full 32-bit graphics support is enabled.
