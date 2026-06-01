@@ -6,7 +6,7 @@ This setup is tailored for my development workflow on the **Lenovo ThinkPad T14s
 
 ## 🚀 System Architecture
 
-- **OS:** NixOS (Unstable channel)
+- **OS:** NixOS (Stable channel - 26.05)
 - **Hosts:** `thinkpad-t14s-gen6` (primary, AMD, Ollama + Open WebUI) and `x300m-stx` (secondary)
 - **Architecture:** `x86_64-linux`
 - **Desktop Environment:** GNOME (Wayland)
