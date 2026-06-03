@@ -17,7 +17,7 @@
 
   networking.networkmanager.enable = true;
 
-  networking.firewall.allowedTCPPorts = [ 58888 ];
+  networking.firewall.allowedTCPPorts = [ 58888 8088 5173 ];
 
   # SSH
   services.openssh = {
