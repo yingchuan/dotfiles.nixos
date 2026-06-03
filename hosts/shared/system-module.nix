@@ -19,9 +19,10 @@
 
   networking.firewall.allowedTCPPorts = [ 58888 8088 5173 ];
 
-  # SSH
+  # SSH — 只允許 LAN 和 WireGuard 連線，擋掉公網直連
   services.openssh = {
     enable = true;
+    openFirewall = false;
     settings = {
       PermitRootLogin = "no";
       PasswordAuthentication = false;
