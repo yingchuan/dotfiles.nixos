@@ -32,11 +32,11 @@
     #   wg genkey | tee peer_private.key | wg pubkey > peer_public.key
     # 或直接用手機 WireGuard App 的「新增隧道 → 從頭建立」產生
     peers = [
-      # 手機
-      # {
-      #   publicKey = "<貼上手機的 WireGuard public key>";
-      #   allowedIPs = [ "10.100.0.2/32" ];
-      # }
+      # Richard 手機
+      {
+        publicKey = "+o9kVXWdvzeoKW6ZUzYT3mqYn2daZkAY80Do4YG4FXA=";
+        allowedIPs = [ "10.100.0.2/32" ];
+      }
     ];
   };
 
