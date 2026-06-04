@@ -363,23 +363,6 @@ in
     }
   '';
 
-  home.file.".gemini/antigravity-cli/mcp_config.json".text = ''
-    {
-      "mcpServers": {
-        "deepwiki": {
-          "serverUrl": "https://mcp.deepwiki.com/mcp"
-        },
-        "puppeteer": {
-          "command": "npx",
-          "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
-        },
-        "memory": {
-          "command": "npx",
-          "args": ["-y", "@modelcontextprotocol/server-memory"]
-        }
-      }
-    }
-  '';
 
   home.file.".gemini/config/hooks.json" = {
     force = true;
@@ -416,6 +399,9 @@ in
   home.file.".gemini/config/mcp_config.json".text = ''
     {
       "mcpServers": {
+        "tavily": {
+          "serverUrl": "https://mcp.tavily.com/mcp/?tavilyApiKey=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"
+        },
         "deepwiki": {
           "serverUrl": "https://mcp.deepwiki.com/mcp"
         },
