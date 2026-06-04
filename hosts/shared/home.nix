@@ -244,7 +244,6 @@ in
     syntaxHighlighting.enable = true;
 
     shellAliases = {
-      claude = "bunx @anthropic-ai/claude-code";
     };
 
     oh-my-zsh = {
