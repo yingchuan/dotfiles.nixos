@@ -43,6 +43,9 @@
   # 允許 VPN 流量進出（UDP 51820）
   networking.firewall.allowedUDPPorts = [ 51820 ];
 
+  # VPN server 必須開啟 IP forwarding，才能轉發客戶端流量
+  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+
   # ── Duck DNS（自動更新動態 IP）────────────────────────────────────────
   services.ddclient = {
     enable = true;
