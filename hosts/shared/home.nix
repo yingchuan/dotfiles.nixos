@@ -2,6 +2,18 @@
 
 let
   sqlite_lib = "${pkgs.sqlite.out}/lib/libsqlite3.so";
+  puppeteerMcpConfig = builtins.toJSON {
+    type = "stdio";
+    command = "${pkgs.nodejs}/bin/npx";
+    args = [ "-y" "@modelcontextprotocol/server-puppeteer" ];
+    env = {
+      PUPPETEER_LAUNCH_OPTIONS = builtins.toJSON {
+        executablePath = "${pkgs.google-chrome}/bin/google-chrome-stable";
+        args = [ "--no-sandbox" "--disable-setuid-sandbox" "--disable-dev-shm-usage" ];
+      };
+      ALLOW_DANGEROUS = "true";
+    };
+  };
 in
 {
   home.username = "richard";
@@ -369,6 +381,38 @@ in
     }
   '';
 
+  home.file.".gemini/config/hooks.json" = {
+    force = true;
+    text = builtins.toJSON {
+      "screenshot-reminder" = {
+        PreInvocation = [{
+          type = "command";
+          command = "printf '{\"injectSteps\":[{\"ephemeralMessage\":\"[截圖提醒] 若此次任務需要截圖輔助，請先到 ~/Pictures/Screenshots 確認有無相關畫面\"}]}\\n'";
+        }];
+      };
+      "format-capture" = {
+        PreToolUse = [{
+          matcher = "^(write_to_file|replace_file_content|multi_replace_file_content)$";
+          hooks = [{
+            type = "command";
+            command = "INPUT=$(cat); CONV=$(echo \"$INPUT\" | ${pkgs.jq}/bin/jq -r '.conversationId' 2>/dev/null || echo unknown); FILE=$(echo \"$INPUT\" | ${pkgs.jq}/bin/jq -r '.toolCall.args.TargetFile // empty' 2>/dev/null); [ -n \"$FILE\" ] && printf '%s' \"$FILE\" > \"/tmp/ag-fmt-$CONV\"; printf '{\"decision\":\"allow\"}\\n'";
+            timeout = 5;
+          }];
+        }];
+      };
+      "format-run" = {
+        PostToolUse = [{
+          matcher = "^(write_to_file|replace_file_content|multi_replace_file_content)$";
+          hooks = [{
+            type = "command";
+            command = "INPUT=$(cat); CONV=$(echo \"$INPUT\" | ${pkgs.jq}/bin/jq -r '.conversationId' 2>/dev/null || echo unknown); FILE=$(cat \"/tmp/ag-fmt-$CONV\" 2>/dev/null); rm -f \"/tmp/ag-fmt-$CONV\"; [ -z \"$FILE\" ] && exit 0; case \"$FILE\" in *.go) ${pkgs.gofumpt}/bin/gofumpt -w \"$FILE\";; *.vue|*.ts|*.js|*.json|*.css) ${pkgs.prettier}/bin/prettier --write \"$FILE\";; esac 2>/dev/null || true";
+            timeout = 30;
+          }];
+        }];
+      };
+    };
+  };
+
   home.file.".gemini/config/mcp_config.json".text = ''
     {
       "mcpServers": {
@@ -483,6 +527,41 @@ in
             }
     }
   '';
+
+  home.file.".claude/settings.json" = {
+    force = true;
+    text = builtins.toJSON {
+      enabledPlugins = {
+        "gopls-lsp@claude-plugins-official" = true;
+      };
+      theme = "dark";
+      skipDangerousModePermissionPrompt = true;
+      hooks = {
+        PostToolUse = [
+          {
+            matcher = "Write|Edit";
+            hooks = [
+              {
+                type = "command";
+                command = "jq -r '.tool_input.file_path // empty' | { read -r f; case \"$f\" in *.go) ${pkgs.gofumpt}/bin/gofumpt -w \"$f\";; *.vue|*.ts|*.js|*.json|*.css) ${pkgs.prettier}/bin/prettier --write \"$f\";; esac; } 2>/dev/null || true";
+                statusMessage = "Formatting...";
+              }
+            ];
+          }
+        ];
+        UserPromptSubmit = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "echo '{\"systemMessage\": \"[截圖提醒] 若此次任務需要截圖輔助，請先到 ~/Pictures/Screenshots 確認有無相關畫面\"}'";
+              }
+            ];
+          }
+        ];
+      };
+    };
+  };
 
   programs.home-manager.enable = true;
 
@@ -605,6 +684,15 @@ in
 
   # Automatically install global Bun packages (e.g. OpenCode CLI) on home-manager activation
   home.activation = {
+    claudeCodeMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      CLAUDE_JSON="$HOME/.claude.json"
+      if [ ! -f "$CLAUDE_JSON" ]; then
+        echo '{}' > "$CLAUDE_JSON"
+      fi
+      ${pkgs.jq}/bin/jq --argjson p '${puppeteerMcpConfig}' \
+        '.mcpServers.puppeteer = $p' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp" \
+        && mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
+    '';
     installGlobalBunPackages = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       echo "Installing/Updating global Bun packages..."
       export PATH="$HOME/.bun/bin:$PATH"
