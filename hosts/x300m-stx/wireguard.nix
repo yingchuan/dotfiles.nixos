@@ -52,5 +52,6 @@
     username = "nouser";          # Duck DNS 不用 username，填 nouser 即可
     passwordFile = "/etc/ddns/duckdns-token";
     domains = [ "iyun" ];         # iyun.duckdns.org
+    usev4 = "webv4";              # 強制只用 IPv4，避免此機器無 IPv6 時報 WARNING
   };
 }
