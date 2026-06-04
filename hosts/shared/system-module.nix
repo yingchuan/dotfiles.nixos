@@ -58,6 +58,7 @@
     home-manager
     gnomeExtensions.kimpanel
     docker-compose
+    dnsutils
   ];
 
   system.stateVersion = "26.05";
