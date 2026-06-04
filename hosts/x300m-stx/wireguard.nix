@@ -37,6 +37,11 @@
         publicKey = "+o9kVXWdvzeoKW6ZUzYT3mqYn2daZkAY80Do4YG4FXA=";
         allowedIPs = [ "10.100.0.2/32" ];
       }
+      # Alison 手機
+      {
+        publicKey = "VFb+l2bWOpjmehlvrLAkB3/O/LEBI7uCow2/eYRIS3E=";
+        allowedIPs = [ "10.100.0.3/32" ];
+      }
     ];
   };
 
