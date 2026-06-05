@@ -51,6 +51,19 @@
   # VPN server 必須開啟 IP forwarding，才能轉發客戶端流量
   boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
 
+  # ── nginx：將 WireGuard 流量 proxy 至 gen-ui-hub Wails dev server ──────
+  # 手機 WireGuard 連入後開 http://10.100.0.1:34115 即可存取完整 Go bindings
+  services.nginx = {
+    enable = true;
+    virtualHosts."gen-ui-hub-wg" = {
+      listen = [{ addr = "10.100.0.1"; port = 34115; }];
+      locations."/" = {
+        proxyPass = "http://127.0.0.1:34115";
+        proxyWebsockets = true;
+      };
+    };
+  };
+
   # ── Duck DNS（自動更新動態 IP）────────────────────────────────────────
   services.ddclient = {
     enable = true;
