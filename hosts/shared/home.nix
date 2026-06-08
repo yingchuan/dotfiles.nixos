@@ -522,6 +522,10 @@ in
       };
       theme = "dark";
       skipDangerousModePermissionPrompt = true;
+      statusLine = {
+        type = "command";
+        command = "bash /home/richard/.claude/statusline-command.sh";
+      };
       hooks = {
         PostToolUse = [
           {
