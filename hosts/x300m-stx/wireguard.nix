@@ -17,8 +17,10 @@
 #
 # VPN 網段：10.100.0.1/24
 #   x300m-stx (server)  → 10.100.0.1
-#   手機                 → 10.100.0.2
-#   其他裝置             → 10.100.0.3, 4, ...
+#   Richard 手機         → 10.100.0.2
+#   Alison 手機          → 10.100.0.3
+#   thinkpad-t14s-gen6   → 10.100.0.4
+#   其他裝置             → 10.100.0.5, 6, ...
 
 {
   # ── WireGuard Server ──────────────────────────────────────────────────
@@ -41,6 +43,11 @@
       {
         publicKey = "VFb+l2bWOpjmehlvrLAkB3/O/LEBI7uCow2/eYRIS3E=";
         allowedIPs = [ "10.100.0.3/32" ];
+      }
+      # thinkpad-t14s-gen6（client，見 hosts/thinkpad-t14s-gen6/wireguard.nix）
+      {
+        publicKey = "WU2dsLFU3EChmV3zYjouzM9As3B3meRoJeDFSvHdIHo=";
+        allowedIPs = [ "10.100.0.4/32" ];
       }
     ];
   };
