@@ -2,6 +2,16 @@
 
 let
   sqlite_lib = "${pkgs.sqlite.out}/lib/libsqlite3.so";
+  handoffGuard = pkgs.writeShellApplication {
+    name = "handoff-guard";
+    runtimeInputs = [ pkgs.jq pkgs.coreutils ];
+    text = builtins.readFile ./claude-hooks/handoff-guard.sh;
+  };
+  handoffRecall = pkgs.writeShellApplication {
+    name = "handoff-recall";
+    runtimeInputs = [ pkgs.jq pkgs.coreutils ];
+    text = builtins.readFile ./claude-hooks/handoff-recall.sh;
+  };
   puppeteerMcpConfig = builtins.toJSON {
     type = "stdio";
     command = "${pkgs.nodejs}/bin/npx";
@@ -545,6 +555,27 @@ in
               {
                 type = "command";
                 command = "echo '{\"systemMessage\": \"[截圖提醒] 若此次任務需要截圖輔助，請先到 ~/Pictures/Screenshots 確認有無相關畫面\"}'";
+              }
+            ];
+          }
+        ];
+        Stop = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${handoffGuard}/bin/handoff-guard";
+              }
+            ];
+          }
+        ];
+        SessionStart = [
+          {
+            matcher = "clear|compact";
+            hooks = [
+              {
+                type = "command";
+                command = "${handoffRecall}/bin/handoff-recall";
               }
             ];
           }
