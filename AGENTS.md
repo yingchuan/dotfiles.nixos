@@ -7,7 +7,7 @@ Personal NixOS dotfiles repo. Manages 2 hosts via Nix Flakes + Home Manager.
 ## Hosts
 
 - **thinkpad-t14s-gen6** — Lenovo ThinkPad T14s Gen 6 (主力機, AMD, ollama/open-webui)
-- **x300m-stx** — ASUS x300m-stx (次要機, gen-ui-hub host, ollama CPU/bge-m3)
+- **x300m-stx** — ASRock x300m-stx (次要機, gen-ui-hub host, ollama CPU/bge-m3)
 
 ## Apply Changes
 
