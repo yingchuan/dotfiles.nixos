@@ -7,7 +7,7 @@ Personal NixOS dotfiles repo. Manages 2 hosts via Nix Flakes + Home Manager.
 ## Hosts
 
 - **thinkpad-t14s-gen6** — Lenovo ThinkPad T14s Gen 6 (主力機, AMD, ollama/open-webui)
-- **x300m-stx** — ASUS x300m-stx (次要機, 無 ollama)
+- **x300m-stx** — ASUS x300m-stx (次要機, gen-ui-hub host, ollama CPU/bge-m3)
 
 ## Apply Changes
 
@@ -56,4 +56,4 @@ flake.nix hosts/
 ## Per-Host Quirks
 
 - **thinkpad-t14s-gen6**: ghostty font-size 14, has ollama/open-webui.
-- **x300m-stx**: ghostty font-size 18, no ollama.
+- **x300m-stx**: ghostty font-size 18, ollama (CPU, bge-m3) for gen-ui-hub embedding.
