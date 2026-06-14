@@ -15,6 +15,12 @@
 #
 #   3. 新增手機 peer（見下方 peers 區塊說明）
 #
+#   4. 建立 Let's Encrypt（lego）用的 DuckDNS token 環境檔（沿用既有 token）：
+#        sudo sh -c 'printf "DUCKDNS_TOKEN=%s\n" "$(cat /etc/ddns/duckdns-token)" \
+#          > /etc/ddns/duckdns-lego.env && chmod 600 /etc/ddns/duckdns-lego.env'
+#      （security.acme 的 environmentFile 需 KEY=VALUE 格式，與 ddclient 的
+#       raw-token passwordFile 不同，故另存一檔。）
+#
 # VPN 網段：10.100.0.1/24
 #   x300m-stx (server)  → 10.100.0.1
 #   Richard 手機         → 10.100.0.2
@@ -58,16 +64,42 @@
   # VPN server 必須開啟 IP forwarding，才能轉發客戶端流量
   boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
 
-  # ── nginx：將 WireGuard 流量 proxy 至 gen-ui-hub Wails dev server ──────
-  # 手機 WireGuard 連入後開 http://10.100.0.1:34115 即可存取完整 Go bindings
+  # ── nginx：TLS 終結 + reverse proxy 至 gen-ui-hub（Go net/http :8088）──
+  # 手機/桌機經 WireGuard 連 https://gen-ui-hub.duckdns.org（綠鎖；HTTPS 是
+  # 瀏覽器開放麥克風 getUserMedia 的前提，內網 http 不算 secure context）。
+  # 憑證由下方 security.acme 走 DuckDNS DNS-01 自動簽發＋續簽。
   services.nginx = {
     enable = true;
-    virtualHosts."gen-ui-hub-wg" = {
-      listen = [{ addr = "10.100.0.1"; port = 34115; }];
+    recommendedProxySettings = true;   # 帶上 Host / X-Forwarded-* 標頭
+    virtualHosts."gen-ui-hub.duckdns.org" = {
+      listenAddresses = [ "10.100.0.1" ];  # 只綁 wg0，不對 LAN/公網開放
+      forceSSL = true;                     # http → https 轉址
+      # 用下方 security.acme 以 DNS-01 簽好的憑證；不可用 enableACME（那會強制
+      # HTTP-01 webroot，與 dnsProvider 互斥）。useACMEHost 只「取用」憑證。
+      useACMEHost = "gen-ui-hub.duckdns.org";
       locations."/" = {
-        proxyPass = "http://127.0.0.1:34115";
+        proxyPass = "http://127.0.0.1:8088";
         proxyWebsockets = true;
+        # SSE（/api/chat 串流、進度圖）必須關 buffering，否則前端收不到即時
+        # token；串流連線久，read timeout 拉長避免被 nginx 中途砍斷。
+        extraConfig = ''
+          proxy_buffering off;
+          proxy_read_timeout 3600s;
+        '';
       };
+    };
+  };
+
+  # ── Let's Encrypt 憑證（DuckDNS DNS-01，無需對外開 80）──────────────────
+  # lego 用 DUCKDNS_TOKEN 自動建 _acme-challenge TXT 記錄完成驗證；token 不可
+  # 進 nix store（會 world-readable），放 environmentFile（見部署註記步驟 4）。
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "yingchuan.chen.2007@gmail.com";
+    certs."gen-ui-hub.duckdns.org" = {
+      dnsProvider = "duckdns";
+      environmentFile = "/etc/ddns/duckdns-lego.env";
+      group = "nginx";   # 讓 nginx 進程讀得到私鑰
     };
   };
 

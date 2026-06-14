@@ -12,7 +12,7 @@
   # SSH 只允許 LAN (enp2s0) 和 WireGuard (wg0) 連入
   networking.firewall.interfaces = {
     enp2s0.allowedTCPPorts = [ 22 ];
-    wg0.allowedTCPPorts = [ 22 34115 ]; # 34115: gen-ui-hub via nginx proxy
+    wg0.allowedTCPPorts = [ 22 80 443 ]; # 80→443 轉址 + HTTPS（nginx → gen-ui-hub :8088）
   };
 
   # Ollama for gen-ui-hub embedding (bge-m3)；無 GPU 用純 CPU package，
