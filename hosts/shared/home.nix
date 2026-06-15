@@ -549,16 +549,6 @@ in
             ];
           }
         ];
-        UserPromptSubmit = [
-          {
-            hooks = [
-              {
-                type = "command";
-                command = "echo '{\"systemMessage\": \"[截圖提醒] 若此次任務需要截圖輔助，請先到 ~/Pictures/Screenshots 確認有無相關畫面\"}'";
-              }
-            ];
-          }
-        ];
         Stop = [
           {
             hooks = [
