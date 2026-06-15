@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   imports = [
@@ -8,6 +8,13 @@
   ];
 
   networking.hostName = "thinkpad-t14s-gen6";
+
+  # COSMIC (thinkpad only) — try it alongside GNOME. cosmic-greeter
+  # replaces the shared GDM here; it lists all sessions so GNOME stays
+  # selectable. x300m-stx keeps GNOME + GDM untouched.
+  services.desktopManager.cosmic.enable = true;
+  services.displayManager.cosmic-greeter.enable = true;
+  services.displayManager.gdm.enable = lib.mkForce false;
 
   # AMD GPU acceleration for Ollama (bound to localhost for security)
   services.ollama = {
