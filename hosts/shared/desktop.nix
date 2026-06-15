@@ -3,13 +3,15 @@
 {
   # Desktop Environment
   services.xserver.enable = true;
-  services.displayManager.gdm.enable = true;
   services.desktopManager.gnome.enable = true;
 
-  # COSMIC — enabled alongside GNOME so it can be tried as a session
-  # choice at the GDM login screen without dropping GNOME. Pick "COSMIC"
-  # from the gear menu on the login screen; switch back any time.
+  # COSMIC — enabled alongside GNOME. Both remain selectable as sessions
+  # at the login screen; switch back to GNOME any time.
   services.desktopManager.cosmic.enable = true;
+
+  # COSMIC's own greeter (cosmic-greeter) replaces GDM. It still lists all
+  # installed sessions, so GNOME stays reachable from the session picker.
+  services.displayManager.cosmic-greeter.enable = true;
 
   services.printing.enable = true;
 
