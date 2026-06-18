@@ -5,6 +5,7 @@
     ./hardware-configuration.nix
     ../shared/system-module.nix
     ./wireguard.nix
+    ./stt.nix
   ];
 
   networking.hostName = "x300m-stx";
