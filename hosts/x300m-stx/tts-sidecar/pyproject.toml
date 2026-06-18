@@ -1,0 +1,11 @@
+[project]
+name = "tts-sidecar"
+version = "0.1.0"
+description = "gen-ui-hub Kokoro TTS sidecar (Phase 11.2 mouth)"
+requires-python = ">=3.12"
+# 版本鎖死成本機 A/B 試聽 + 實測通過的組合(uv.lock 鎖全傳遞依賴)。
+dependencies = [
+    "kokoro-onnx==0.5.0",
+    "misaki[zh]==0.9.4",
+    "soundfile==0.14.0",
+]

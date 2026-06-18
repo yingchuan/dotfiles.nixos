@@ -1,65 +1,103 @@
 { config, pkgs, ... }:
 
-# TTS sidecar — Piper 本機語音合成(gen-ui-hub Phase 11.2 的「嘴巴」後端)。
+# TTS sidecar — Kokoro 本機語音合成(gen-ui-hub Phase 11.2 的「嘴巴」後端)。
 #
-# 與 stt.nix(耳朵)對稱:純宣告式、Nix 全管、開機即起、綁 localhost,hub 同機
-# 呼叫不對外。合成完全在地(零按量雲端成本),雲端 Gemini Live TTS 只在 hub 端
-# 當 sidecar 不可用時的低頻 fallback。詳見 gen-ui-hub TODO.md 11.2。
+# 與 stt.nix(耳朵)對稱:開機即起、綁 localhost、hub 同機呼叫不對外。合成完全在地
+# (零按量雲端成本),雲端 Gemini Live TTS 只在 hub 端當 sidecar 不可用時的低頻 fallback。
 #
-# 嗓音定值(用戶 A/B 試聽選定):huayan-medium 女聲原色 + length-scale 1.2(微慢)。
-# 不降調、不過 ffmpeg —— sidecar 內就一個 piper http_server,零後處理。
+# 嗓音定值(用戶 A/B 試聽選定):Kokoro 女聲 zf_xiaoxiao —— 比舊 Piper huayan 自然
+# (用戶嫌 Piper 機械)。中文 G2P 走 misaki[zh](kokoro-onnx 內建 espeak 不支援中文)。
+# 介面與舊 Piper sidecar 一致:POST / 帶 {"text": "..."} → 回 audio/wav,hub 端零改。
 #
-# 介面:piper 內建 flask http server(POST / 帶 {"text": "..."} → 回 audio/wav)。
+# 打包(用戶選「pinned uv venv」):Kokoro 與 misaki 都不在 nixpkgs,故不走純 Nix,
+# 改用 uv 從鎖死的 pyproject.toml + uv.lock 建 venv。base python 用 nixpkgs python312
+# (非 uv 自下載),wheel 的 native .so(onnxruntime/libstdc++ 等)靠 LD_LIBRARY_PATH 指
+# 進 nix store 解決 —— 不必開全域 nix-ld。模型檔仍走 fetchurl pin(下方)。
 
 let
-  # Piper 官方中文女聲(huayan medium)。onnx + 同名 .json 必須並置同一目錄,
-  # piper 以 -m 指 onnx、自動讀旁邊的 .json。兩檔各自 fetchurl 後組進單一 store path。
-  ttsVoiceDir = pkgs.stdenvNoCC.mkDerivation {
-    pname = "piper-voice-zh-huayan-medium";
+  # Kokoro v1.0 權重 + voices(zf_xiaoxiao 等含在 voices bin)。兩檔各自 fetchurl 後
+  # 組進單一 store path,server.py 以 KOKORO_MODEL/KOKORO_VOICES 環境變數指過去。
+  ttsModelDir = pkgs.stdenvNoCC.mkDerivation {
+    pname = "kokoro-onnx-model";
     version = "1.0.0";
     dontUnpack = true;
     dontConfigure = true;
     dontBuild = true;
     onnx = pkgs.fetchurl {
-      url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/zh/zh_CN/huayan/medium/zh_CN-huayan-medium.onnx";
-      hash = "sha256-mSmRe/jKuyb9Uo6kTTpmmcEehzF6FHZTEkIL4jC+Dz0=";
+      url = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx";
+      hash = "sha256-fV347PfUsYeAFaMmhgU/0O6+K8N3I0YIdkzA7zY2psU=";
     };
-    config = pkgs.fetchurl {
-      url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/zh/zh_CN/huayan/medium/zh_CN-huayan-medium.onnx.json";
-      hash = "sha256-1SHcRVBKjMyZ4yWCKzWUbdcBhAv7B+PbsxpAkp7WqCs=";
+    voices = pkgs.fetchurl {
+      url = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin";
+      hash = "sha256-vKYQuDCOjZnzLm/kGX5+wBZ5Jk7+0MrJFA/pwp8fv30=";
     };
     installPhase = ''
       mkdir -p $out
-      cp $onnx   $out/zh_CN-huayan-medium.onnx
-      cp $config $out/zh_CN-huayan-medium.onnx.json
+      cp $onnx   $out/kokoro-v1.0.onnx
+      cp $voices $out/voices-v1.0.bin
     '';
   };
 
-  # piper-tts 是 top-level buildPythonApplication(不在 python3Packages),用
-  # toPythonModule 轉回 module 才能進 withPackages 組出含全 deps 的 python 環境,
-  # 以執行非預設入口 `python -m piper.http_server`(piper bin wrapper 只跑 -m piper)。
-  pyEnv = pkgs.python3.withPackages (ps: [ (ps.toPythonModule pkgs.piper-tts) ]);
+  # server.py + pyproject.toml + uv.lock(進 store)。
+  src = ./tts-sidecar;
+
+  pyBase = pkgs.python312;
+
+  # manylinux wheel 的 native .so 執行期要找得到的共用庫(onnxruntime 要 libstdc++/
+  # libgcc_s/libgomp,都在 cc.cc.lib;zlib 常用)。LD_LIBRARY_PATH 注入,免開 nix-ld。
+  libPath = pkgs.lib.makeLibraryPath [
+    pkgs.stdenv.cc.cc.lib
+    pkgs.zlib
+  ];
+
+  # ExecStartPre:把鎖檔/原始碼放進可寫的 StateDirectory,uv 從 lock 建 venv(--frozen
+  # 不改 lock;首跑下載 wheel 需網路,之後走 CacheDirectory)。
+  syncScript = pkgs.writeShellScript "tts-sidecar-sync" ''
+    set -eu
+    install -m644 ${src}/pyproject.toml ./pyproject.toml
+    install -m644 ${src}/uv.lock        ./uv.lock
+    install -m644 ${src}/server.py       ./server.py
+    ${pkgs.uv}/bin/uv sync --frozen --no-dev
+  '';
 in
 {
   systemd.services.tts-sidecar = {
-    description = "gen-ui-hub TTS sidecar — Piper 本機語音合成 (127.0.0.1:8232)";
+    description = "gen-ui-hub TTS sidecar — Kokoro 本機語音合成 (127.0.0.1:8232)";
     wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+
+    environment = {
+      KOKORO_MODEL = "${ttsModelDir}/kokoro-v1.0.onnx";
+      KOKORO_VOICES = "${ttsModelDir}/voices-v1.0.bin";
+      TTS_HOST = "127.0.0.1";
+      TTS_PORT = "8232";
+      LD_LIBRARY_PATH = libPath;
+      # uv 用 nixpkgs python、絕不自己下載 interpreter。
+      UV_PYTHON = "${pyBase}/bin/python3.12";
+      UV_PYTHON_DOWNLOADS = "never";
+      UV_NO_PROGRESS = "1";
+      # DynamicUser 沒有真 $HOME → 指到 StateDirectory,uv cache 指 CacheDirectory。
+      HOME = "%S/tts-sidecar";
+      UV_CACHE_DIR = "%C/tts-sidecar";
+    };
+
     serviceConfig = {
-      ExecStart = ''
-        ${pyEnv}/bin/python -m piper.http_server \
-          --model ${ttsVoiceDir}/zh_CN-huayan-medium.onnx \
-          --host 127.0.0.1 --port 8232 \
-          --length-scale 1.2
-      '';
-      # 無狀態、只讀 store、綁 localhost → 動態使用者 + 收緊權限(同 stt-sidecar)。
-      DynamicUser = true;
+      Type = "simple";
+      StateDirectory = "tts-sidecar";
+      CacheDirectory = "tts-sidecar";
+      WorkingDirectory = "%S/tts-sidecar";
+      ExecStartPre = syncScript;
+      # 直接跑 venv python(不經 uv run,免執行期再對 lock/網路)。
+      ExecStart = "%S/tts-sidecar/.venv/bin/python server.py";
       Restart = "on-failure";
-      RestartSec = 3;
+      RestartSec = 5;
+      # 無對外、只寫 state/cache → 動態使用者 + 收緊權限(比照 stt/舊 tts)。
+      DynamicUser = true;
+      NoNewPrivileges = true;
+      PrivateTmp = true;
       ProtectSystem = "strict";
       ProtectHome = true;
-      PrivateTmp = true;
-      NoNewPrivileges = true;
     };
   };
 }
