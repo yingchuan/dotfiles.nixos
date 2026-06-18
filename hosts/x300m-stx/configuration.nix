@@ -29,21 +29,31 @@
   # && npm run build），systemd 只負責常駐／開機自啟／崩潰重啟，不在 Nix 內建置。
   # app 自己讀 WorkingDirectory 下的 .env（憑證 / FINMIND / UNIFI / GEMINI /
   # SMARTPOWER_ALLOWED_OUTLETS 全在那）。
-  systemd.services.gen-ui-hub = {
+  #
+  # 為什麼是 user service（不是 system service）：app 完全不需特權——以 richard
+  # 跑、綁非特權埠 8088、只讀寫自己家目錄的檔。設成 user service 後，部署重啟
+  # 走 `systemctl --user restart gen-ui-hub`（零 sudo），把部署迴路最後一個 sudo
+  # 消掉。配 linger（見下）讓 user 實例開機即起、免登入。
+  #
+  # ordering 取捨：user 實例無法 order 在 system unit（network-online / ollama）
+  # 之後——但 user manager 本就在系統起來後才啟動，加上 Restart=on-failure +
+  # RestartSec=3，ollama 還沒好就重試幾輪，不需顯式依賴。
+  systemd.user.services.gen-ui-hub = {
     description = "Gen-UI Hub — AI 智能管家調度器 (Go net/http :8088)";
-    after = [ "network-online.target" "ollama.service" ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = [ "default.target" ];
     serviceConfig = {
-      User = "richard";
       WorkingDirectory = "/home/richard/gen-ui-hub";
       ExecStart = "/home/richard/gen-ui-hub/gen-ui-hub";
       Restart = "on-failure";
       RestartSec = 3;
       # agy(~/.local/bin) 與 opencode(~/.bun/bin) 是 exec 出去的子行程，systemd
-      # 精簡 PATH 撈不到 → 顯式補（含 nix profile / 系統）。HOME 由 User=richard
-      # 自動設成 /home/richard，agy/opencode 靠它找各自的設定 / 訂閱憑證。
+      # 精簡 PATH 撈不到 → 顯式補（含 nix profile / 系統）。user service 的 HOME
+      # 本就是 /home/richard，agy/opencode 靠它找各自的設定 / 訂閱憑證。
       Environment = "PATH=/home/richard/.local/bin:/home/richard/.bun/bin:/home/richard/.nix-profile/bin:/run/current-system/sw/bin:/usr/bin:/bin";
     };
   };
+
+  # 讓 richard 的 systemd user 實例開機即啟動（免登入），user service 才能在無
+  # 互動 session 時常駐／開機自啟。等價於 `loginctl enable-linger richard`，宣告式。
+  users.users.richard.linger = true;
 }
