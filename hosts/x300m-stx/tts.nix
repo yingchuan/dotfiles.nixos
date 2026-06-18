@@ -57,7 +57,13 @@ let
     install -m644 ${src}/pyproject.toml ./pyproject.toml
     install -m644 ${src}/uv.lock        ./uv.lock
     install -m644 ${src}/server.py       ./server.py
+    # 一次性遷移:舊 venv 是 hardlink 模式(沙箱裡 .so mmap 失敗)。沒有 copy 模式
+    # 標記就砍掉重建,讓下面的 uv sync 以 UV_LINK_MODE=copy 放獨立複本。
+    if [ ! -e .venv/.copymode ]; then
+      rm -rf .venv
+    fi
     ${pkgs.uv}/bin/uv sync --frozen --no-dev
+    touch .venv/.copymode
   '';
 in
 {
@@ -80,6 +86,10 @@ in
       # DynamicUser 沒有真 $HOME → 指到 StateDirectory,uv cache 指 CacheDirectory。
       HOME = "%S/tts-sidecar";
       UV_CACHE_DIR = "%C/tts-sidecar";
+      # uv 預設 hardlink venv .so 到 cache(共享 inode);在 systemd 沙箱 namespace 下
+      # 後段 PT_LOAD segment mmap 會失敗(numpy .so「failed to map segment」)。改 copy
+      # 模式放獨立複本,沙箱外能跑、沙箱內也能跑。
+      UV_LINK_MODE = "copy";
     };
 
     serviceConfig = {
