@@ -57,13 +57,7 @@ let
     install -m644 ${src}/pyproject.toml ./pyproject.toml
     install -m644 ${src}/uv.lock        ./uv.lock
     install -m644 ${src}/server.py       ./server.py
-    # 一次性遷移:舊 venv 是 hardlink 模式(沙箱裡 .so mmap 失敗)。沒有 copy 模式
-    # 標記就砍掉重建,讓下面的 uv sync 以 UV_LINK_MODE=copy 放獨立複本。
-    if [ ! -e .venv/.copymode ]; then
-      rm -rf .venv
-    fi
     ${pkgs.uv}/bin/uv sync --frozen --no-dev
-    touch .venv/.copymode
   '';
 in
 {
@@ -83,12 +77,10 @@ in
       UV_PYTHON = "${pyBase}/bin/python3.12";
       UV_PYTHON_DOWNLOADS = "never";
       UV_NO_PROGRESS = "1";
-      # DynamicUser 沒有真 $HOME → 指到 StateDirectory,uv cache 指 CacheDirectory。
+      # 靜態 tts user 無登入 $HOME → 指到 StateDirectory,uv cache 指 CacheDirectory。
       HOME = "%S/tts-sidecar";
       UV_CACHE_DIR = "%C/tts-sidecar";
-      # uv 預設 hardlink venv .so 到 cache(共享 inode);在 systemd 沙箱 namespace 下
-      # 後段 PT_LOAD segment mmap 會失敗(numpy .so「failed to map segment」)。改 copy
-      # 模式放獨立複本,沙箱外能跑、沙箱內也能跑。
+      # venv .so 與 cache 各自獨立複本(非 hardlink),省去跨 bind-mount 共享 inode 的眉角。
       UV_LINK_MODE = "copy";
     };
 
@@ -102,12 +94,24 @@ in
       ExecStart = "%S/tts-sidecar/.venv/bin/python server.py";
       Restart = "on-failure";
       RestartSec = 5;
-      # 無對外、只寫 state/cache → 動態使用者 + 收緊權限(比照 stt/舊 tts)。
-      DynamicUser = true;
+      # 無對外、只寫 state/cache → 靜態系統使用者 + 收緊權限。
+      # 不用 DynamicUser:它的 StateDirectory 走 idmapped bind-mount 會帶 noexec,
+      # venv 裡編譯出的原生 .so 無法 mmap-exec → numpy「failed to map segment」。
+      # (STT 沒中招是因為它整包 python env 在 /nix/store=exec,沒落可寫 StateDirectory。)
+      User = "tts";
+      Group = "tts";
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectSystem = "strict";
       ProtectHome = true;
     };
+  };
+
+  # tts.nix 專屬靜態系統使用者(取代 DynamicUser,見上方 serviceConfig 註解)。
+  users.groups.tts = { };
+  users.users.tts = {
+    isSystemUser = true;
+    group = "tts";
+    description = "gen-ui-hub TTS sidecar";
   };
 }
