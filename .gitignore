@@ -1,3 +1,7 @@
 .aider*
 .antigravitycli/
 .omo/
+
+# nixos-rebuild build / nix build GC-root symlinks(指向 /nix/store 系統閉包)
+result
+result-*
