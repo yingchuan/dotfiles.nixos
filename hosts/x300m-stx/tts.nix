@@ -50,8 +50,14 @@ let
     pkgs.zlib
   ];
 
-  # ExecStartPre:把鎖檔/原始碼放進可寫的 StateDirectory,uv 從 lock 建 venv(--frozen
-  # 不改 lock;首跑下載 wheel 需網路,之後走 CacheDirectory)。
+  # 可寫工作目錄。刻意「不用」systemd StateDirectory/CacheDirectory:非 root user 的
+  # 那些目錄走 idmapped bind-mount、被強制 nosuid,nodev,noexec,venv 裡編譯出的原生 .so
+  # 無法 mmap-exec → numpy「failed to map segment」(DynamicUser 與靜態 User 皆中)。改用
+  # tmpfiles 自管目錄 + ReadWritePaths 暴露給服務,該掛載是純 rw,relatime(可執行)。
+  stateDir = "/var/lib/tts-sidecar";
+
+  # ExecStartPre:把鎖檔/原始碼放進 stateDir,uv 從 lock 建 venv(--frozen 不改 lock;
+  # 首跑下載 wheel 需網路,之後走 UV_CACHE_DIR)。
   syncScript = pkgs.writeShellScript "tts-sidecar-sync" ''
     set -eu
     install -m644 ${src}/pyproject.toml ./pyproject.toml
@@ -77,26 +83,28 @@ in
       UV_PYTHON = "${pyBase}/bin/python3.12";
       UV_PYTHON_DOWNLOADS = "never";
       UV_NO_PROGRESS = "1";
-      # 靜態 tts user 無登入 $HOME → 指到 StateDirectory,uv cache 指 CacheDirectory。
-      HOME = "%S/tts-sidecar";
-      UV_CACHE_DIR = "%C/tts-sidecar";
-      # venv .so 與 cache 各自獨立複本(非 hardlink),省去跨 bind-mount 共享 inode 的眉角。
+      # 靜態 tts user 無登入 $HOME → 指到 stateDir;uv cache 收進同一可寫樹(同理避開
+      # CacheDirectory 的 idmapped noexec)。
+      HOME = stateDir;
+      UV_CACHE_DIR = "${stateDir}/.uv-cache";
+      # venv .so 與 cache 各自獨立複本(非 hardlink),省去跨檔案系統共享 inode 的眉角。
       UV_LINK_MODE = "copy";
     };
 
     serviceConfig = {
       Type = "simple";
-      StateDirectory = "tts-sidecar";
-      CacheDirectory = "tts-sidecar";
-      WorkingDirectory = "%S/tts-sidecar";
+      WorkingDirectory = stateDir;
+      # 用 ReadWritePaths 暴露自管目錄(見上方 stateDir 註解:不走 StateDirectory 以避開
+      # 非 root user 的 idmapped noexec 掛載)。目錄由下方 tmpfiles 宣告式建立。
+      ReadWritePaths = [ stateDir ];
       ExecStartPre = syncScript;
       # 直接跑 venv python(不經 uv run,免執行期再對 lock/網路)。
-      ExecStart = "%S/tts-sidecar/.venv/bin/python server.py";
+      ExecStart = "${stateDir}/.venv/bin/python server.py";
       Restart = "on-failure";
       RestartSec = 5;
-      # 無對外、只寫 state/cache → 靜態系統使用者 + 收緊權限。
-      # 不用 DynamicUser:它的 StateDirectory 走 idmapped bind-mount 會帶 noexec,
-      # venv 裡編譯出的原生 .so 無法 mmap-exec → numpy「failed to map segment」。
+      # 無對外、只寫自管目錄 → 靜態系統使用者 + 收緊權限。
+      # 不用 DynamicUser:它(及任何非 root User)的 StateDirectory 走 idmapped bind-mount
+      # 會帶 noexec,venv 編譯出的原生 .so 無法 mmap-exec → numpy「failed to map segment」。
       # (STT 沒中招是因為它整包 python env 在 /nix/store=exec,沒落可寫 StateDirectory。)
       User = "tts";
       Group = "tts";
@@ -106,6 +114,9 @@ in
       ProtectHome = true;
     };
   };
+
+  # venv/cache 落腳的可寫目錄(取代 StateDirectory,見上方 stateDir 註解)。
+  systemd.tmpfiles.rules = [ "d /var/lib/tts-sidecar 0750 tts tts -" ];
 
   # tts.nix 專屬靜態系統使用者(取代 DynamicUser,見上方 serviceConfig 註解)。
   users.groups.tts = { };
