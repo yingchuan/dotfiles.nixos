@@ -570,6 +570,19 @@ in
             ];
           }
         ];
+        # 收掉 Puppeteer 測完殘留的 headless Chrome 孤兒(跨 session 默默燒 CPU)。
+        # pgrep -x chrome 只配 comm=chrome,不會誤殺 hook 自己的 shell。
+        SessionEnd = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "for p in $(${pkgs.procps}/bin/pgrep -x chrome); do ${pkgs.gnugrep}/bin/grep -qa puppeteer_dev_chrome_profile /proc/$p/cmdline 2>/dev/null && kill $p 2>/dev/null; done; true";
+                statusMessage = "Cleaning up Puppeteer Chrome...";
+              }
+            ];
+          }
+        ];
       };
     };
   };
