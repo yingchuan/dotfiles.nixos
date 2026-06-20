@@ -12,6 +12,11 @@ G2P(中英混句):**中文走 misaki[zh] legacy IPA**(onnx 內建 espeak 不支�
 會把部分中文韻母漏成「生漢字」(阴/言/十…)→ 出 vocab → 中文幾乎發不出聲(「耶一聲就沒」)。
 故改回 legacy 中文(原本就 OK)+ 自己分段把英文字詞抽出走 espeak,不碰 1.1 前端。
 
+繁轉簡(OpenCC t2s):misaki 底層 pypinyin 的「詞組多音字字典」以簡體建,繁體直餵會
+miss → 退化成單字預設讀音(長期念 zhǎng、銀行念 xíng、音樂念 lè…)。故 G2P 前把中文段
+轉簡再查,只改發音、不動顯示文字。t2s 方向多對一無歧義(s2t 才有歧義),安全且零退步。
+本機 13 句多音字實測 6/13→12/13(殘留「還錢」屬真上下文相依,要 BERT 級消歧才解)。
+
 啟動參數(環境變數,給 systemd 設):
   KOKORO_MODEL   kokoro-v1.0.onnx 路徑
   KOKORO_VOICES  voices-v1.0.bin 路徑
@@ -29,6 +34,7 @@ import jieba
 import soundfile as sf
 from kokoro_onnx import Kokoro
 from misaki import zh
+from opencc import OpenCC
 
 VOICE = "zf_xiaoxiao"
 SPEED = 1.0
@@ -47,6 +53,8 @@ print("[tts] ready", flush=True)
 _EN_WORD = re.compile(r"[A-Za-z][A-Za-z'\-]*")
 # 漢字區段(對齊 misaki legacy_call 的切法)。
 _ZH_RUN = re.compile(r"[一-鿿]+|[^一-鿿]+")
+# 繁→簡轉換器(見模組註解:修多音字詞組查表 miss)。載入一次。
+_t2s = OpenCC("t2s")
 
 
 def _en_to_ipa(m: "re.Match") -> str:
@@ -65,7 +73,8 @@ def text_to_phonemes(text: str) -> str:
     out = []
     for seg in _ZH_RUN.findall(text):
         if is_zh:
-            words = jieba.lcut(seg, cut_all=False)
+            # 繁轉簡後再斷詞/查音(只為發音、不影響顯示文字)。
+            words = jieba.lcut(_t2s.convert(seg), cut_all=False)
             out.append(" ".join(zh.ZHG2P.word2ipa(w) for w in words))
         else:
             out.append(_EN_WORD.sub(_en_to_ipa, seg))
