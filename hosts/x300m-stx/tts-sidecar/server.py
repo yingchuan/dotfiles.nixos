@@ -3,7 +3,9 @@
 
 介面與舊 Piper sidecar 一致:POST / 帶 {"text": "..."} → 回 audio/wav。hub 端
 (handleVoiceSpeak)零改。嗓音定值:Kokoro 女聲 zf_xiaoxiao(用戶 A/B 試聽選定,
-比 Piper huayan 自然)。中文 G2P 走 misaki[zh](onnx 內建 espeak 不支援中文)。
+比 Piper huayan 自然)。中文 G2P 走 misaki[zh](onnx 內建 espeak 不支援中文);英文段
+走 kokoro 內建 espeak phonemizer 當 misaki 的 en_callable(否則 legacy 模式把英文原樣
+當音素丟出 → 念起來超破)。整句仍以 zf_xiaoxiao 一個聲線念,英文帶中文口音但可懂。
 
 啟動參數(環境變數,給 systemd 設):
   KOKORO_MODEL   kokoro-v1.0.onnx 路徑
@@ -30,7 +32,12 @@ PORT = int(os.environ.get("TTS_PORT", "8232"))
 
 print(f"[tts] loading kokoro model={MODEL} voices={VOICES}", flush=True)
 _kokoro = Kokoro(MODEL, VOICES)
-_g2p = zh.ZHG2P()
+# 英文 fallback:複用 kokoro 內建 espeak phonemizer(回傳已濾成 Kokoro vocab 的音素字串),
+# 當 misaki 1.1 中文前端的 en_callable。中英夾雜時英文段被轉成正確音素(仍以 zf_xiaoxiao
+# 聲線念,帶中文口音但可懂),取代 legacy(version 預設)把英文當原樣音素丟出的「超破」。
+# version='1.1' 才會建 ZHFrontend 並啟用 en_callable;其依賴(jieba/pypinyin)已在 zh extra。
+_en_g2p = lambda en: _kokoro.tokenizer.phonemize(en, lang="en-us")
+_g2p = zh.ZHG2P(version="1.1", en_callable=_en_g2p)
 print("[tts] ready", flush=True)
 
 
