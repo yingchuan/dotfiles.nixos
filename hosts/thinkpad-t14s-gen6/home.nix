@@ -1,0 +1,30 @@
+{ inputs, pkgs, lib, ... }:
+
+# thinkpad-only 疊加層（疊在 hosts/shared/home.nix 之上）
+# 目前只放 codebase-memory-mcp：Claude Code 的程式碼結構索引/查詢加速器。
+# 刻意不進 shared，x300m（server）不需要這顆開發工具。
+
+let
+  cbm = inputs.codebase-memory-mcp.packages.${pkgs.system}.default;
+
+  # 與 shared/home.nix 的 puppeteerMcpConfig 同模式，註冊成 stdio MCP server
+  cbmMcpConfig = builtins.toJSON {
+    type = "stdio";
+    command = "${cbm}/bin/codebase-memory-mcp";
+    args = [ ];
+  };
+in
+{
+  home.packages = [ cbm ];
+
+  # 把 codebase-memory-mcp 寫進 ~/.claude.json（沿用 shared 的 claudeCodeMcp 慣例）
+  home.activation.codebaseMemoryMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    CLAUDE_JSON="$HOME/.claude.json"
+    if [ ! -f "$CLAUDE_JSON" ]; then
+      echo '{}' > "$CLAUDE_JSON"
+    fi
+    ${pkgs.jq}/bin/jq --argjson p '${cbmMcpConfig}' \
+      '.mcpServers."codebase-memory-mcp" = $p' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp" \
+      && mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
+  '';
+}

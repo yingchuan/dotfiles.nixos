@@ -7,6 +7,9 @@
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Claude Code 開發加速器：把 codebase 索引成知識圖譜，用結構化查詢取代 grep/read
+    # 只裝 thinkpad（見 hosts/thinkpad-t14s-gen6/home.nix）；非 JARVIS 記憶層
+    codebase-memory-mcp.url = "github:DeusData/codebase-memory-mcp";
   };
 
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
@@ -41,6 +44,7 @@
         extraSpecialArgs = { inherit inputs; };
         modules = [
           ./hosts/shared/home.nix
+          ./hosts/thinkpad-t14s-gen6/home.nix
         ];
       };
 
