@@ -720,7 +720,7 @@ in
     installGlobalBunPackages = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       echo "Installing/Updating global Bun packages..."
       export PATH="$HOME/.bun/bin:$PATH"
-      $DRY_RUN_CMD ${pkgs.bun}/bin/bun install -g opencode-ai
+      $DRY_RUN_CMD ${pkgs.bun}/bin/bun install -g opencode-ai @anthropic-ai/claude-code
     '';
   };
 
