@@ -17,6 +17,16 @@
     wg0.allowedTCPPorts = [ 22 80 443 ]; # 80→443 轉址 + HTTPS（nginx → gen-ui-hub :8088）
   };
 
+  # Swap：24GB RAM 原本無 swap，服務尖峰會被 OOM killer 直接 hard-kill（曾因
+  # 同時常駐兩顆 Gemma 把 ollama 砍掉、連帶 bge-m3 embedding 召回降級）。開 16GiB
+  # swapfile 當「緩衝墊」，讓突發尖峰外溢、保護 ollama / hub / 語音不被硬殺。
+  # ⚠️ swap 不是拿來多跑一顆大模型——LLM 權重一旦落 swap 推論會慢到不能用；
+  # swappiness=10 讓內核盡量留實體 RAM、只有壓力下才動 swap。
+  swapDevices = [
+    { device = "/swapfile"; size = 16 * 1024; } # 16 GiB（size 單位 MiB）
+  ];
+  boot.kernel.sysctl."vm.swappiness" = 10;
+
   # Ollama for gen-ui-hub embedding (bge-m3)；無 GPU 用純 CPU package，
   # 綁 localhost — gen-ui-hub 同機呼叫，不對外開放。
   services.ollama = {
