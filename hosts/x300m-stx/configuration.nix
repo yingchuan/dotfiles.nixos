@@ -61,7 +61,15 @@
       # agy(~/.local/bin) 與 opencode(~/.bun/bin) 是 exec 出去的子行程，systemd
       # 精簡 PATH 撈不到 → 顯式補（含 nix profile / 系統）。user service 的 HOME
       # 本就是 /home/richard，agy/opencode 靠它找各自的設定 / 訂閱憑證。
-      Environment = "PATH=/home/richard/.local/bin:/home/richard/.bun/bin:/home/richard/.nix-profile/bin:/run/current-system/sw/bin:/usr/bin:/bin";
+      #
+      # SSL_CERT_FILE：opencode（bun runtime）做 HTTPS 不會自動找 /etc/ssl/certs，
+      # 缺 CA bundle 時 TLS 靜默卡死 → 子行程逾時回空（Phase 11.5 STT 術語修正每條轉錄
+      # 都 fallback 回原文的真兇）。這份 systemd user env 全系統沒設 SSL_CERT_FILE，
+      # 故在此指向 pinned cacert bundle；newOpencodeCmd 的白名單已放行此變數會轉發進沙盒。
+      Environment = [
+        "PATH=/home/richard/.local/bin:/home/richard/.bun/bin:/home/richard/.nix-profile/bin:/run/current-system/sw/bin:/usr/bin:/bin"
+        "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+      ];
     };
   };
 
