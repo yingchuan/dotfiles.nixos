@@ -35,6 +35,11 @@
         allowedIPs = [ "10.100.0.0/24" ];
         # 本機在 NAT 後面，需定期送 keepalive 維持 NAT 對應
         persistentKeepalive = 25;
+        # x300m 是 HiNet 動態公網 IP（iyun.duckdns.org 會跟著換）。WireGuard 只在
+        # 啟動時解析一次 endpoint 就快取，IP 輪替後不會自動重解 →「0 B received」、
+        # tunnel 死掉（持續 keepalive 也救不了，因為打的是舊 IP）。此選項讓 NixOS
+        # 產生一個 timer 週期性重跑 `wg set ... endpoint`、跟著 DDNS 走，IP 換了自癒。
+        dynamicEndpointRefreshSeconds = 60;
       }
     ];
   };
