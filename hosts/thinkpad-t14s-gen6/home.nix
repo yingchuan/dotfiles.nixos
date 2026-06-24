@@ -15,6 +15,10 @@ let
   };
 in
 {
+  # 筆電螢幕近看，把 shared 的 12 調大一點（x300m 接電視則是 18，見 flake.nix）
+  # mkForce 才能取代 shared 的定義，否則兩個 font-size 並存、ghostty 取最後一行＝12 失效
+  programs.ghostty.settings.font-size = lib.mkForce 14;
+
   home.packages = [ cbm ];
 
   # 把 codebase-memory-mcp 寫進 ~/.claude.json（沿用 shared 的 claudeCodeMcp 慣例）
