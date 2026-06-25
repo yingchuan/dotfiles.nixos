@@ -7,6 +7,7 @@
     ./wireguard.nix
     ./stt.nix
     ./tts.nix
+    ./audiobook-queue.nix
   ];
 
   networking.hostName = "x300m-stx";
@@ -34,7 +35,18 @@
     package = pkgs.ollama;
     host = "127.0.0.1";
     port = 11434;
+    # 整顆 ollama 框死在 CPU 0-3（4 執行緒）—— 由有聲書背景翻譯工驅動的決策
+    # （見 audiobook-queue.nix）。重活（草稿 decode）在 ollama 進程裡，框核才真節流；
+    # 留 CPU 4-11 給 Kokoro TTS / hub / 系統，故翻譯隨時跑都吃不到 TTS 的核、不必卡離峰窗。
+    # 代價＝embedding(bge-m3) 白天也只在這 4 核（短脈衝、無感）、翻譯慢 ~1.5-2x（背景工無妨）。
+    environmentVariables = {
+      # 別讓進行中的翻譯段 head-of-line block 住互動 embedding 召回：放行 2 路並行，
+      # 短 embedding 請求可與長翻譯段同時在 0-3 上跑、不必排隊等整段 decode 完。
+      OLLAMA_NUM_PARALLEL = "2";
+    };
   };
+  # cpuset 設在生成的 ollama unit 上（services.ollama 沒有對應高階旋鈕）。
+  systemd.services.ollama.serviceConfig.AllowedCPUs = "0-3";
 
   # gen-ui-hub（AI 智能管家調度器，Go net/http :8088；nginx 反代見 wireguard.nix）。
   # binary 由手動 go build 產出（工作流：git pull → go build；前端動了再 npm ci
