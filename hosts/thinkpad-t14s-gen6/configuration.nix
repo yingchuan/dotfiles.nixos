@@ -22,6 +22,9 @@
     package = pkgs.ollama-rocm;
     host = "127.0.0.1";
     port = 11434;
+    # ollama 0.30+ drops integrated GPUs by default; the Radeon 880M (gfx1150)
+    # is fully ROCm-capable here, so opt it back in explicitly.
+    environmentVariables.OLLAMA_IGPU_ENABLE = "1";
   };
 
   services.open-webui = {
