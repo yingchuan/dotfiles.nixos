@@ -2,8 +2,9 @@
 """kokoro-onnx TTS sidecar — gen-ui-hub Phase 11.2 的「嘴巴」後端(取代 Piper)。
 
 介面與舊 Piper sidecar 一致:POST / 帶 {"text": "..."} → 回 audio/wav。hub 端
-(handleVoiceSpeak)零改。嗓音定值:Kokoro 女聲 zf_xiaoxiao(用戶 A/B 試聽選定,
-比 Piper huayan 自然)。
+(handleVoiceSpeak)零改。可選 {"speed": 1.0}(0.5~2.0,Kokoro 原生時間伸縮、pitch
+不變)供有聲書面板的講話速度控制;缺省或非法值=1.0。嗓音定值:Kokoro 女聲 zf_xiaoxiao
+(用戶 A/B 試聽選定,比 Piper huayan 自然)。
 
 G2P(中英混句):**中文走 misaki[zh] legacy IPA**(onnx 內建 espeak 不支援中文)、
 **英文段走 kokoro 內建 espeak phonemizer**,兩者皆為 Kokoro vocab 內的音素、拼成
@@ -82,12 +83,26 @@ def text_to_phonemes(text: str) -> str:
     return "".join(out).replace(chr(815), "")
 
 
-def synth_wav(text: str) -> bytes:
+def synth_wav(text: str, speed: float = SPEED) -> bytes:
     phonemes = text_to_phonemes(text)
-    samples, sr = _kokoro.create(phonemes, voice=VOICE, speed=SPEED, is_phonemes=True)
+    samples, sr = _kokoro.create(phonemes, voice=VOICE, speed=speed, is_phonemes=True)
     buf = io.BytesIO()
     sf.write(buf, samples, sr, format="WAV", subtype="PCM_16")
     return buf.getvalue()
+
+
+# 變速安全範圍。Kokoro 是原生時間伸縮(pitch 不變),放慢=講話放慢、加快=講話加快。
+# 夾在此區間,過慢/過快超出模型穩定域。
+SPEED_MIN = 0.5
+SPEED_MAX = 2.0
+
+
+def _clamp_speed(v) -> float:
+    try:
+        s = float(v)
+    except (TypeError, ValueError):
+        return SPEED
+    return max(SPEED_MIN, min(SPEED_MAX, s))
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -114,7 +129,9 @@ class Handler(BaseHTTPRequestHandler):
             if not text:
                 self._send(400, b"empty text")
                 return
-            self._send(200, synth_wav(text), "audio/wav")
+            # 可選 speed(預設 1.0):有聲書面板的講話速度控制經 hub 原樣帶進來。
+            speed = _clamp_speed(payload.get("speed", SPEED))
+            self._send(200, synth_wav(text, speed), "audio/wav")
         except Exception as e:  # noqa: BLE001
             self._send(500, f"synth failed: {e}".encode())
 
