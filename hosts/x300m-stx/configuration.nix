@@ -35,18 +35,20 @@
     package = pkgs.ollama;
     host = "127.0.0.1";
     port = 11434;
-    # 整顆 ollama 框死在 CPU 0-3（4 執行緒）—— 由有聲書背景翻譯工驅動的決策
-    # （見 audiobook-queue.nix）。重活（草稿 decode）在 ollama 進程裡，框核才真節流；
-    # 留 CPU 4-11 給 Kokoro TTS / hub / 系統，故翻譯隨時跑都吃不到 TTS 的核、不必卡離峰窗。
-    # 代價＝embedding(bge-m3) 白天也只在這 4 核（短脈衝、無感）、翻譯慢 ~1.5-2x（背景工無妨）。
+    # CPU 分配走「軟優先」而非硬框核：ollama 給低 CPUWeight、Kokoro TTS 給高 CPUWeight
+    # （見 tts.nix）。閒置時 ollama 吃滿全 12 核快翻草稿（實測 ~4.3 tok/s）；TTS 一播放，
+    # CFS 依權重讓 TTS 搶贏、把背景翻譯壓下去（實測 TTS 合成回到 ~1.1s/句、近閒置基線），
+    # 翻譯只在你聽書當下放慢、句子間空檔又搶回核心。被犧牲的永遠是不痛不癢的背景翻譯。
+    # 取代舊「硬釘 CPU 0-3 四核」：那是單邊框 ollama（TTS/hub 仍會擠進 0-3、沒真隔離），
+    # 把翻譯永遠餓到 ~0.39 tok/s（慢 11x）只換播放順——代價太大。軟優先實測兩全其美。
     environmentVariables = {
       # 別讓進行中的翻譯段 head-of-line block 住互動 embedding 召回：放行 2 路並行，
-      # 短 embedding 請求可與長翻譯段同時在 0-3 上跑、不必排隊等整段 decode 完。
+      # 短 embedding 請求可與長翻譯段同時跑、不必排隊等整段 decode 完。
       OLLAMA_NUM_PARALLEL = "2";
     };
   };
-  # cpuset 設在生成的 ollama unit 上（services.ollama 沒有對應高階旋鈕）。
-  systemd.services.ollama.serviceConfig.AllowedCPUs = "0-3";
+  # 軟優先：低權重，讓 TTS（高權重）在 CPU 競爭時搶贏（services.ollama 無對應高階旋鈕）。
+  systemd.services.ollama.serviceConfig.CPUWeight = 20;
 
   # gen-ui-hub（AI 智能管家調度器，Go net/http :8088；nginx 反代見 wireguard.nix）。
   # binary 由手動 go build 產出（工作流：git pull → go build；前端動了再 npm ci

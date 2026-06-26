@@ -12,13 +12,15 @@
 # 復用 repo checkout 裡的 Python 工具、不需特權。配既有 linger（見 configuration.nix）開機
 # 即可被 timer 觸發；暫停背景工＝`systemctl --user stop audiobook-queue.timer`（零 sudo）。
 #
-# 🔑「不吵 Kokoro 基線」的主防線＝核心隔離，不是離峰時間。真正的重活（6GB 模型載入＋逐段
-# decode）住在「共享的 services.ollama」進程裡——這個 unit 只是對 ollama 發 HTTP 的瘦 client。
-# 故 cpuset 設在 ollama 那顆（configuration.nix：`AllowedCPUs = "0-3"`），把整顆 ollama 框在
-# CPU 0-3、留 4-11 給 TTS/hub/系統 → 翻譯物理上吃不到 TTS 的核、**隨時跑都不卡朗讀**，離峰
-# 窗因此從硬依賴降為單純排程節奏。下方 unit 自己的 Nice/IOSchedulingClass/MemoryMax 綁的是
-# 瘦 client（近乎免費、防腳本失控），不影響 inference。跑完仍 `ollama stop` 卸載草稿模型還原
-# RSS。見 ref_x300m_hardware_specs。
+# 🔑「不吵 Kokoro 基線」的主防線＝CPU 軟優先（CPUWeight），不是核心隔離、更不是離峰時間。
+# 真正的重活（6GB 模型載入＋逐段 decode）住在「共享的 services.ollama」進程裡——這個 unit 只是
+# 對 ollama 發 HTTP 的瘦 client。故權重設在 ollama 那顆：ollama CPUWeight=20（低）、Kokoro TTS
+# CPUWeight=1000（高，見 tts.nix）。閒置時 ollama 吃滿 12 核快翻（~4.3 tok/s）；TTS 一播放，CFS
+# 依權重讓 TTS 搶贏、翻譯讓位（實測 TTS 仍 ~1.1s/句）→ **隨時跑都不卡朗讀**，離峰窗因此從硬
+# 依賴降為單純排程節奏。〔舊版用 cpuset `AllowedCPUs=0-3` 硬框 ollama，但那是單邊框（TTS/hub
+# 仍擠進 0-3、沒真隔離）、把翻譯永遠餓到 0.39 tok/s 慢 11x，2026-06-26 實測後改軟優先。〕
+# 下方 unit 自己的 Nice/IOSchedulingClass/MemoryMax/CPUWeight 綁的是瘦 client（近乎免費、防腳本
+# 失控），不影響 inference。跑完仍 `ollama stop` 卸載草稿模型還原 RSS。見 ref_x300m_hardware_specs。
 
 let
   repo = "/home/richard/gen-ui-hub";

@@ -102,6 +102,10 @@ in
       ExecStart = "${stateDir}/.venv/bin/python server.py";
       Restart = "on-failure";
       RestartSec = 5;
+      # CPU 軟優先：播放時搶贏背景翻譯（ollama CPUWeight=20，見 configuration.nix）。
+      # TTS 是脈衝式（合成 ~1s → 播放數秒 TTS 閒置），高權重確保每次合成即時搶到核、
+      # 播放順不卡。實測：翻譯吃滿核時 TTS 仍 ~1.1s/句（無此權重時被拖到 3.0s）。
+      CPUWeight = 1000;
       # 無對外、只寫自管目錄 → 靜態系統使用者 + 收緊權限。
       # 不用 DynamicUser:它(及任何非 root User)的 StateDirectory 走 idmapped bind-mount
       # 會帶 noexec,venv 編譯出的原生 .so 無法 mmap-exec → numpy「failed to map segment」。
