@@ -530,6 +530,12 @@ in
       enabledPlugins = {
         "gopls-lsp@claude-plugins-official" = true;
       };
+      # handoff-guard 在 context 達此 token 數時提醒寫 HANDOFF.md(預設 120k)。
+      # 抬到 150k:系統 prompt+工具 schema+claudeMd 的固定底盤變重後,120k 撞太早,
+      # handoff 變頻繁卻沒實際好處;150k 給幹活預算多 25% 喘息。
+      env = {
+        HANDOFF_TOKEN_THRESHOLD = "150000";
+      };
       theme = "dark";
       skipDangerousModePermissionPrompt = true;
       statusLine = {
