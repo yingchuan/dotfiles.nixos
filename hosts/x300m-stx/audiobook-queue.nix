@@ -32,6 +32,11 @@ let
   # 每次觸發最多翻幾章。框在 4 核後 ~1.5-2x 慢（大章 ~2h/章）；timer 每 4h 一輪 → 一輪翻
   # 一章最穩（裝得下、模型一載一卸乾淨循環）。缺章清完即自動空轉收工。可調。
   maxPerRun = 1;
+
+  # 逐段 checkpoint 頻率：每翻幾段落落一次 complete=0 進度（done_paras 游標）。被打斷最多
+  # 丟這麼多段（大章 675 段、預設 10 即每章存 ~67 次，成本可忽略）。與 ab_queue.py 內預設
+  # 同值，此處顯式宣告＝旋鈕可見可追蹤（鏡像 Go startLocalDraftDrain 的補翻 drain env）。
+  ckptEvery = 10;
 in
 {
   # oneshot：純由 timer 觸發，不 wantedBy 任何 target（不常駐、不開機自啟）。
@@ -48,6 +53,7 @@ in
       # ollama CLI/HTTP 都打同機 server（services.ollama 綁此 host:port）。
       OLLAMA_HOST = "127.0.0.1:11434";
       AB_TL_MODEL = draftModel;
+      AB_CKPT_EVERY = toString ckptEvery;
     };
 
     serviceConfig = {
