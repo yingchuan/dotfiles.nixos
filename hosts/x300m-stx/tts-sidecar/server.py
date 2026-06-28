@@ -3,8 +3,10 @@
 
 介面與舊 Piper sidecar 一致:POST / 帶 {"text": "..."} → 回 audio/wav。hub 端
 (handleVoiceSpeak)零改。可選 {"speed": 1.0}(0.5~2.0,Kokoro 原生時間伸縮、pitch
-不變)供有聲書面板的講話速度控制;缺省或非法值=1.0。嗓音定值:Kokoro 女聲 zf_xiaoxiao
-(用戶 A/B 試聽選定,比 Piper huayan 自然)。
+不變)供有聲書面板的講話速度控制;缺省或非法值=1.0。可選 {"lang": "zh"|"ja"}:zh=念
+中譯走 zf_xiaoxiao+中文 G2P(下述)、ja=念日文原文走 jf_alpha+misaki[ja]日文 G2P
+(有聲書「念日文原文」模式,給日文學習者爽聽可理解輸入);缺省=zh。嗓音定值:中文 Kokoro
+女聲 zf_xiaoxiao(用戶 A/B 試聽選定,比 Piper huayan 自然)、日文 jf_alpha。
 
 G2P(中英混句):**中文走 misaki[zh] legacy IPA**(onnx 內建 espeak 不支援中文)、
 **英文段走 kokoro 內建 espeak phonemizer**,兩者皆為 Kokoro vocab 內的音素、拼成
@@ -37,7 +39,10 @@ from kokoro_onnx import Kokoro
 from misaki import zh
 from opencc import OpenCC
 
-VOICE = "zf_xiaoxiao"
+# 嗓音定值。中文＝zf_xiaoxiao(A/B 試聽選定)；日文＝Kokoro 日文女聲(voices-v1.0.bin 內含、
+# 不需另抓)，預設 jf_alpha(較自然的通用女聲)，可 KOKORO_JA_VOICE 覆寫換 jf_gongitsune 等。
+VOICE_ZH = "zf_xiaoxiao"
+VOICE_JA = os.environ.get("KOKORO_JA_VOICE", "jf_alpha")
 SPEED = 1.0
 
 MODEL = os.environ.get("KOKORO_MODEL", "kokoro-v1.0.onnx")
@@ -83,9 +88,35 @@ def text_to_phonemes(text: str) -> str:
     return "".join(out).replace(chr(815), "")
 
 
-def synth_wav(text: str, speed: float = SPEED) -> bytes:
-    phonemes = text_to_phonemes(text)
-    samples, sr = _kokoro.create(phonemes, voice=VOICE, speed=speed, is_phonemes=True)
+# 日文 G2P(misaki[ja]→pyopenjtalk)。延遲載入:只有第一個日文請求才初始化,故中文路徑
+# 與啟動完全不受影響(日文依賴缺席也不拖垮服務);pyopenjtalk 首次會備字典,初始化稍慢一次。
+_ja_g2p = None
+
+
+def _get_ja_g2p():
+    global _ja_g2p
+    if _ja_g2p is None:
+        from misaki import ja  # 延遲 import:中文路徑零依賴日文後端
+
+        _ja_g2p = ja.JAG2P()
+    return _ja_g2p
+
+
+def text_to_phonemes_ja(text: str) -> str:
+    """日文 → Kokoro 音素串。misaki[ja] 直接吐 Kokoro vocab 內音素(含音調記號),不必像中文
+    那樣自管分段/繁簡。回傳 (phonemes, tokens),只取 phonemes。"""
+    phonemes, _ = _get_ja_g2p()(text)
+    return phonemes
+
+
+def synth_wav(text: str, speed: float = SPEED, lang: str = "zh") -> bytes:
+    if lang == "ja":
+        phonemes = text_to_phonemes_ja(text)
+        voice = VOICE_JA
+    else:
+        phonemes = text_to_phonemes(text)
+        voice = VOICE_ZH
+    samples, sr = _kokoro.create(phonemes, voice=voice, speed=speed, is_phonemes=True)
     buf = io.BytesIO()
     sf.write(buf, samples, sr, format="WAV", subtype="PCM_16")
     return buf.getvalue()
@@ -131,7 +162,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             # 可選 speed(預設 1.0):有聲書面板的講話速度控制經 hub 原樣帶進來。
             speed = _clamp_speed(payload.get("speed", SPEED))
-            self._send(200, synth_wav(text, speed), "audio/wav")
+            # 可選 lang(預設 zh):有聲書面板「念中譯/念日文原文」切換經 hub 原樣帶進來。
+            lang = (payload.get("lang") or "zh").strip().lower()
+            if lang != "ja":
+                lang = "zh"
+            self._send(200, synth_wav(text, speed, lang), "audio/wav")
         except Exception as e:  # noqa: BLE001
             self._send(500, f"synth failed: {e}".encode())
 

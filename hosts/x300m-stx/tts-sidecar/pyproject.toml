@@ -6,7 +6,17 @@ requires-python = ">=3.12"
 # 版本鎖死成本機 A/B 試聽 + 實測通過的組合(uv.lock 鎖全傳遞依賴)。
 dependencies = [
     "kokoro-onnx==0.5.0",
-    "misaki[zh]==0.9.4",
+    "misaki[zh,ja]==0.9.4",
     "soundfile==0.14.0",
     "opencc==1.3.1",
+    # 日文 G2P 字典:用自帶字典的 unidic-lite(離線、wheel 內含)取代 misaki[ja] 直接依賴的
+    # full `unidic`(dicdir 空、要 runtime `unidic download` 抓 ~1GB)。見下方 override。
+    "unidic-lite==1.0.8",
 ]
+
+[tool.uv]
+# misaki[ja] 直接依賴 full `unidic`,但它只下殼、dicdir 要另跑 `python -m unidic download`
+# 抓 ~1GB 才有內容(否則 fugashi 初始化即 "no such file mecabrc")。用永不成立的 marker
+# 把 full unidic 擠出解析,改用上面宣告的 unidic-lite —— fugashi 找不到 full unidic 會自動
+# 退到 unidic-lite(本機隔離 venv 實測:JAG2P 對「私は学生です」吐正確音素、は→βa)。
+override-dependencies = ["unidic ; sys_platform == 'never'"]
