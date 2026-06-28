@@ -56,10 +56,26 @@ let
   # tmpfiles 自管目錄 + ReadWritePaths 暴露給服務,該掛載是純 rw,relatime(可執行)。
   stateDir = "/var/lib/tts-sidecar";
 
+  # 日文 G2P(misaki[ja])硬依賴 pyopenjtalk —— 它「只有 sdist、無任何 wheel」,且是
+  # 內含 open_jtalk/hts_engine 的 C++ 擴充,任何平台都得在裝機時從源碼編(本機開發環境
+  # 因預設帶 gcc/cmake/make 而靜默編成,誤導以為有 wheel)。故 uv sync 期間 PATH 必須有
+  # 完整 C/C++ 工具鏈,否則 cmake 報「CMAKE_MAKE_PROGRAM/CMAKE_C_COMPILER not set」整個
+  # 服務起不來(全 TTS 連中文一起啞)。編出的 wheel 進 UV_CACHE_DIR,只首跑(或清快取後)編。
+  buildToolchain = pkgs.lib.makeBinPath [
+    pkgs.cmake
+    pkgs.gnumake
+    pkgs.ninja
+    pkgs.stdenv.cc      # cc/c++(gcc wrapper)
+    pkgs.coreutils      # install 等
+  ];
+
   # ExecStartPre:把鎖檔/原始碼放進 stateDir,uv 從 lock 建 venv(--frozen 不改 lock;
-  # 首跑下載 wheel 需網路,之後走 UV_CACHE_DIR)。
+  # 首跑下載 wheel/編 pyopenjtalk 需網路+工具鏈,之後走 UV_CACHE_DIR)。
   syncScript = pkgs.writeShellScript "tts-sidecar-sync" ''
     set -eu
+    export PATH=${buildToolchain}:$PATH
+    export CC=${pkgs.stdenv.cc}/bin/cc
+    export CXX=${pkgs.stdenv.cc}/bin/c++
     install -m644 ${src}/pyproject.toml ./pyproject.toml
     install -m644 ${src}/uv.lock        ./uv.lock
     install -m644 ${src}/server.py       ./server.py
@@ -102,6 +118,9 @@ in
       ExecStart = "${stateDir}/.venv/bin/python server.py";
       Restart = "on-failure";
       RestartSec = 5;
+      # 首跑要從源碼編 pyopenjtalk(C++),會超過 systemd 預設 90s 啟動逾時 → 放寬。
+      # 編完進 uv cache,之後 sync 秒過。
+      TimeoutStartSec = 600;
       # CPU 軟優先：播放時搶贏背景翻譯（ollama CPUWeight=20，見 configuration.nix）。
       # TTS 是脈衝式（合成 ~1s → 播放數秒 TTS 閒置），高權重確保每次合成即時搶到核、
       # 播放順不卡。實測：翻譯吃滿核時 TTS 仍 ~1.1s/句（無此權重時被拖到 3.0s）。
