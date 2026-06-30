@@ -8,6 +8,7 @@
     ./stt.nix
     ./tts.nix
     ./audiobook-queue.nix
+    ./audiobook-review.nix
   ];
 
   networking.hostName = "x300m-stx";
