@@ -67,6 +67,7 @@ in
 
     # Neovim & Development Dependencies
     git
+    gh
     lazygit
     ripgrep
     fd
