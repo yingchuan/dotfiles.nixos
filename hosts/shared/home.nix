@@ -26,6 +26,8 @@ let
   };
 in
 {
+  imports = [ ./input-method.nix ];
+
   home.username = "richard";
   home.homeDirectory = "/home/richard";
   home.stateVersion = "26.05";
@@ -134,9 +136,8 @@ in
     CC = "gcc";
     LIBSQLITE_PATH = sqlite_lib;
     LIBSQLITE3_PATH = sqlite_lib;
-    XMODIFIERS = "@im=fcitx";
-    SDL_IM_MODULE = "fcitx";
-    GLFW_IM_MODULE = "fcitx";
+    # IM env（XMODIFIERS/SDL_IM_MODULE/GLFW_IM_MODULE）已移交 ./input-method.nix
+    # 的 i18n.inputMethod 自動注入，不再手寫（避免蓋錯，如 GLFW 應為 ibus）。
   };
 
   programs.neovim = {
