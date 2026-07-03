@@ -51,6 +51,16 @@
   # 軟優先：低權重，讓 TTS（高權重）在 CPU 競爭時搶贏（services.ollama 無對應高階旋鈕）。
   systemd.services.ollama.serviceConfig.CPUWeight = 20;
 
+  # gen-ui-hub 在地判題（刷題教練 §6）的沙盒工具鏈。judge/ 薄 Go runner 疊 bubblewrap
+  # 跑學習者/oracle 的 Python：`exec.LookPath` 要撈得到 `bwrap` 與 `python3`（`bash` 已在
+  # 系統）。落 systemPackages → /run/current-system/sw/bin，正在 hub user service 的 PATH 上
+  # （見下方 Environment）。bwrap 本體在 /nix/store、judge 綁 /nix 故其動態庫齊全；python3
+  # 只用到 sys/json stdlib，毋須額外套件。開發機靠 `nix-shell -p bubblewrap`，此處是 production 常駐。
+  environment.systemPackages = with pkgs; [
+    bubblewrap
+    python3
+  ];
+
   # gen-ui-hub（AI 智能管家調度器，Go net/http :8088；nginx 反代見 wireguard.nix）。
   # binary 由手動 go build 產出（工作流：git pull → go build；前端動了再 npm ci
   # && npm run build），systemd 只負責常駐／開機自啟／崩潰重啟，不在 Nix 內建置。
