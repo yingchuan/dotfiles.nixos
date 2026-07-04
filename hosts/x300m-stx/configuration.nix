@@ -56,9 +56,14 @@
   # 系統）。落 systemPackages → /run/current-system/sw/bin，正在 hub user service 的 PATH 上
   # （見下方 Environment）。bwrap 本體在 /nix/store、judge 綁 /nix 故其動態庫齊全；python3
   # 只用到 sys/json stdlib，毋須額外套件。開發機靠 `nix-shell -p bubblewrap`，此處是 production 常駐。
+  #
+  # clang：C++ 判題（§7-3）。judge 在**主機上**（非沙盒內）用 clang++ 編學習者的 C++——nix
+  # cc-wrapper 需自己的 env/bash，撐不過沙盒 --clearenv，故只把產出的 binary 丟進 bwrap 跑
+  # （動態庫走 /nix bind 齊全）。wrapper 路徑已內烘，bare-PATH 呼叫（無 nix-shell）照樣編得起來。
   environment.systemPackages = with pkgs; [
     bubblewrap
     python3
+    clang
   ];
 
   # gen-ui-hub（AI 智能管家調度器，Go net/http :8088；nginx 反代見 wireguard.nix）。
