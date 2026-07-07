@@ -10,6 +10,11 @@
     # Claude Code 開發加速器：把 codebase 索引成知識圖譜，用結構化查詢取代 grep/read
     # 只裝 thinkpad（見 hosts/thinkpad-t14s-gen6/home.nix）；非 JARVIS 記憶層
     codebase-memory-mcp.url = "github:DeusData/codebase-memory-mcp";
+
+    # AMD Ryzen AI NPU 堆疊（XRT + xrt-plugin-amdxdna + FastFlowLM + Lemonade）。
+    # 只裝 thinkpad（Strix Point / gfx1150 帶 XDNA2 NPU）。刻意「不」follows 本 flake 的
+    # nixpkgs——它 overlay 對自己 pin 的 nixpkgs 建，follows 會讓所有後端從源碼重編（見上游 README）。
+    nix-amd-ai.url = "github:noamsto/nix-amd-ai";
   };
 
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
@@ -27,6 +32,7 @@
         specialArgs = { inherit inputs; };
         modules = [
           ./hosts/thinkpad-t14s-gen6/configuration.nix
+          inputs.nix-amd-ai.nixosModules.default
         ];
       };
 
