@@ -5,6 +5,7 @@
     ./hardware-configuration.nix
     ../shared/system-module.nix
     ./wireguard.nix
+    ./yt-translate.nix
   ];
 
   networking.hostName = "thinkpad-t14s-gen6";
