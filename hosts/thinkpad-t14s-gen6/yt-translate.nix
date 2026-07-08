@@ -27,7 +27,9 @@ in
     after = [ "network.target" ];
 
     # yt-dlp 宣告式注入 unit PATH(服務靠它抓字幕),免程式碼 fallback 的 `nix run` 冷啟延遲。
-    path = [ pkgs.yt-dlp ];
+    # bash 必須也在:服務用 `sh -c` 呼叫 yt-dlp(容多字 YTT_YTDLP),systemd user service
+    # 的 PATH 極簡不含 sh,漏了會 `exec: "sh": not found`(手動跑有互動 shell 才沒事)。
+    path = [ pkgs.yt-dlp pkgs.bash ];
 
     environment = {
       # unit path 已有 yt-dlp,直接用命令名(蓋掉程式預設的 `nix run nixpkgs#yt-dlp --`)。
