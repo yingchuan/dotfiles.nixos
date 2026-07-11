@@ -29,6 +29,18 @@
   ];
   boot.kernel.sysctl."vm.swappiness" = 10;
 
+  # ── 永不自動睡眠 ──────────────────────────────────────────────────────────────
+  # x300m 是常駐伺服器（SSH + nginx 反代對外），睡了就 SSH 斷、hub/ollama/語音全停。
+  # 它雖 headless 操作，卻仍跑 GNOME（system-module → desktop.nix 的 GDM + gnome）：
+  # gnome-settings-daemon 預設 AC 閒置 ~20 分自動 suspend——沒人登入桌面時，**GDM greeter
+  # 自己**就會把整台機器睡掉。最硬的宣告式保證＝遮蔽 systemd 的四個睡眠 target：不論誰
+  # （GNOME / GDM / logind / 手動 systemctl suspend）發起，最終都收束到這些 target，遮了整條
+  # 路徑一律 no-op。伺服器不需要手動 suspend，副作用可接受。scoped 在 x300m——筆電照常會睡。
+  systemd.targets.sleep.enable = false;
+  systemd.targets.suspend.enable = false;
+  systemd.targets.hibernate.enable = false;
+  systemd.targets.hybrid-sleep.enable = false;
+
   # Ollama for gen-ui-hub embedding (bge-m3)；無 GPU 用純 CPU package，
   # 綁 localhost — gen-ui-hub 同機呼叫，不對外開放。
   services.ollama = {
