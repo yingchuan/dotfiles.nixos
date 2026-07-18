@@ -3,6 +3,9 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
+    # 只給少數快動工具吃 unstable（codex CLI 版本比 26.05 stable 新很多、官方 source-build）。
+    # 系統其餘一律走上面的 26.05 stable，靠 overlay 只覆蓋單一 package。
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     home-manager = {
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -20,9 +23,21 @@
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
     let
       system = "x86_64-linux";
+      unstable = inputs.nixpkgs-unstable.legacyPackages.${system};
       pkgs = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
+        # 單一 package pin unstable（overlay 會傳進 home-manager 的 pkgs；config 不會，故用 overlay）：
+        #   codex   → 26.05 stable 只有 0.133，走 unstable 拿 0.144.x。
+        #   prettier→ 26.05 的 prettier wasm binding 建置期拉 pnpm-9.15.9（stable 標 insecure、
+        #             會擋掉整個 home eval，是既有問題非 codex 引入）；unstable 同 3.8.3 但未標
+        #             insecure，改拉 unstable 版繞過（比 permittedInsecurePackages 可靠，後者到不了 HM pkgs）。
+        overlays = [
+          (final: prev: {
+            codex = unstable.codex;
+            prettier = unstable.prettier;
+          })
+        ];
       };
     in
     {

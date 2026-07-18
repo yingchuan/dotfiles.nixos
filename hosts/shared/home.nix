@@ -42,6 +42,7 @@ in
 
   home.packages = with pkgs; [
     aider-chat
+    codex # OpenAI Codex CLI（Rust）：pin unstable、見 flake.nix overlay
     bun
     # Fonts
     noto-fonts
