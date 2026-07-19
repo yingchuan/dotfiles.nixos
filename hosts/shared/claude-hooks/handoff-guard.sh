@@ -30,21 +30,28 @@ if [ -f "$handoff_file" ]; then
   fi
 fi
 
-# Parse transcript JSONL to get token count from last assistant message with usage
+# Parse transcript JSONL to get the current turn's context usage.
+# Claude records it under .message.usage; Codex records the latest turn under
+# .payload.info.last_token_usage.total_tokens.
 token_count=0
 if [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
-  # Reverse-scan the JSONL for the last assistant message that has .message.usage
+  # Reverse-scan so both clients stop at the newest usable usage record.
   token_count=$(
     tac "$transcript_path" 2>/dev/null | \
     while IFS= read -r line; do
       result=$(printf '%s' "$line" | jq -r '
-        select(.message.usage != null) |
-        (
-          (.message.usage.input_tokens // 0) +
-          (.message.usage.cache_read_input_tokens // 0) +
-          (.message.usage.cache_creation_input_tokens // 0) +
-          (.message.usage.output_tokens // 0)
-        )
+        if .payload.info.last_token_usage.total_tokens? != null then
+          .payload.info.last_token_usage.total_tokens
+        elif .message.usage? != null then
+          (
+            (.message.usage.input_tokens // 0) +
+            (.message.usage.cache_read_input_tokens // 0) +
+            (.message.usage.cache_creation_input_tokens // 0) +
+            (.message.usage.output_tokens // 0)
+          )
+        else
+          empty
+        end
       ' 2>/dev/null || true)
       if [ -n "$result" ] && [ "$result" != "null" ]; then
         printf '%s\n' "$result"

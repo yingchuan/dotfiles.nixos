@@ -596,6 +596,40 @@ in
     };
   };
 
+  # Codex 使用與 Claude 相同的 handoff 策略：任務節點平時增量維護，
+  # Stop 在 150k tokens 時兜底，clear/compact 後自動回灌。
+  home.file.".codex/hooks.json" = {
+    force = true;
+    text = builtins.toJSON {
+      description = "Context handoff guard and recall";
+      hooks = {
+        Stop = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${pkgs.bash}/bin/bash -c 'HANDOFF_TOKEN_THRESHOLD=150000 exec ${handoffGuard}/bin/handoff-guard'";
+                statusMessage = "Checking context handoff...";
+              }
+            ];
+          }
+        ];
+        SessionStart = [
+          {
+            matcher = "clear|compact";
+            hooks = [
+              {
+                type = "command";
+                command = "${handoffRecall}/bin/handoff-recall";
+                statusMessage = "Loading context handoff...";
+              }
+            ];
+          }
+        ];
+      };
+    };
+  };
+
   programs.home-manager.enable = true;
 
   dconf.settings = {
