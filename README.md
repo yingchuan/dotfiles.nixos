@@ -89,6 +89,7 @@ home-manager switch --flake .#richard@<hostname>
 
 - **Tmux (`.tmux.conf.local`):** The local configuration is generated via `builtins.concatStringsSep`. Due to how ohmytmux parses the local file, custom shell functions must start with `# ` at column 0, and standard variable definitions must *not* contain leading spaces or hashes.
 - **Podman:** Configured as the primary container backend with `dockerCompat` enabled. The system includes a default `policy.json` to allow insecure registry pulls (`insecureAcceptAnything`) to facilitate local development workflows without strict signature enforcement.
+- **gen-ui-hub backups:** See [docs/gen-ui-hub-backup.md](docs/gen-ui-hub-backup.md) for the encrypted Litestream-to-Google-Drive design, secret-handling rules, and restore acceptance test.
 
 ---
 *Generated and maintained with the assistance of Gemini CLI.*

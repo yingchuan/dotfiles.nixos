@@ -1,4 +1,9 @@
-{ inputs, pkgs, lib, ... }:
+{
+  inputs,
+  pkgs,
+  lib,
+  ...
+}:
 
 # thinkpad-only 疊加層（疊在 hosts/shared/home.nix 之上）
 # 目前只放 codebase-memory-mcp：Claude Code 的程式碼結構索引/查詢加速器。
@@ -19,7 +24,10 @@ in
   # mkForce 才能取代 shared 的定義，否則兩個 font-size 並存、ghostty 取最後一行＝12 失效
   programs.ghostty.settings.font-size = lib.mkForce 14;
 
-  home.packages = [ cbm ];
+  home.packages = [
+    cbm
+    pkgs.rclone
+  ];
 
   # 把 codebase-memory-mcp 寫進 ~/.claude.json（沿用 shared 的 claudeCodeMcp 慣例）
   home.activation.codebaseMemoryMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
