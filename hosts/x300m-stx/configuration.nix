@@ -9,6 +9,7 @@
     ./tts.nix
     ./audiobook-queue.nix
     ./audiobook-review.nix
+    ./litestream.nix
   ];
 
   networking.hostName = "x300m-stx";
@@ -16,7 +17,11 @@
   # SSH 只允許 LAN (enp2s0) 和 WireGuard (wg0) 連入
   networking.firewall.interfaces = {
     enp2s0.allowedTCPPorts = [ 22 ];
-    wg0.allowedTCPPorts = [ 22 80 443 ]; # 80→443 轉址 + HTTPS（nginx → gen-ui-hub :8088）
+    wg0.allowedTCPPorts = [
+      22
+      80
+      443
+    ]; # 80→443 轉址 + HTTPS（nginx → gen-ui-hub :8088）
   };
 
   # Swap：24GB RAM 原本無 swap，服務尖峰會被 OOM killer 直接 hard-kill（曾因
@@ -25,7 +30,10 @@
   # ⚠️ swap 不是拿來多跑一顆大模型——LLM 權重一旦落 swap 推論會慢到不能用；
   # swappiness=10 讓內核盡量留實體 RAM、只有壓力下才動 swap。
   swapDevices = [
-    { device = "/swapfile"; size = 16 * 1024; } # 16 GiB（size 單位 MiB）
+    {
+      device = "/swapfile";
+      size = 16 * 1024;
+    } # 16 GiB（size 單位 MiB）
   ];
   boot.kernel.sysctl."vm.swappiness" = 10;
 

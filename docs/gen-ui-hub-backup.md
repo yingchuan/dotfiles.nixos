@@ -5,7 +5,8 @@
 - `rclone` is installed declaratively on `thinkpad-t14s-gen6` through Home Manager.
 - The local `gdrive:` and `gdrive-crypt:` remotes use a dedicated Google OAuth client and have
   passed an encrypted read/write/delete probe.
-- Litestream replication, the x300m upload timer, and the restore drill are not implemented yet.
+- The declarative x300m Litestream local-replica service is implemented but not deployed yet.
+- The x300m upload timer and the production restore drill are not implemented yet.
 
 Do not describe the backup as operational until the restore acceptance test below passes.
 
@@ -68,10 +69,19 @@ Do not store this file in Git or the Nix store.
 
 ## Planned x300m units
 
-Add the following declaratively under `hosts/x300m-stx/` after validating the pinned Litestream
-package and configuration format:
+The pinned Litestream 0.5 service is defined in `hosts/x300m-stx/litestream.nix`. It runs as
+`richard` because `/home/richard` is intentionally mode `0700`, and writes only these runtime
+locations:
 
-- a persistent `gen-ui-hub-litestream.service`;
+- replica: `/home/richard/.local/share/gen-ui-hub-backup/litestream`;
+- tracking metadata: `/home/richard/.local/state/gen-ui-hub-litestream`.
+
+It keeps hourly snapshots for seven days, validates the replica every six hours, and keeps mutable
+Litestream metadata outside the application repository. The service must be deployed and pass a
+local restore drill before this increment is complete.
+
+Remaining planned units:
+
 - `gen-ui-hub-gdrive-backup.service` as `Type=oneshot`;
 - `gen-ui-hub-gdrive-backup.timer` every 15 to 30 minutes with `Persistent=true`;
 - optionally, a weekly restore-drill service and timer.
