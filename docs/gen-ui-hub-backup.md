@@ -5,10 +5,12 @@
 - `rclone` is installed declaratively on `thinkpad-t14s-gen6` through Home Manager.
 - The local `gdrive:` and `gdrive-crypt:` remotes use a dedicated Google OAuth client and have
   passed an encrypted read/write/delete probe.
-- The declarative x300m Litestream local-replica service is implemented but not deployed yet.
-- The x300m upload timer and the production restore drill are not implemented yet.
+- The declarative x300m Litestream local-replica service is deployed and active.
+- The first production local restore drill passed on 2026-07-21.
+- The x300m upload timer and encrypted Drive round-trip restore drill are not implemented yet.
 
-Do not describe the backup as operational until the restore acceptance test below passes.
+The local replica is restorable, but the backup is not durable off-machine until the encrypted
+Google Drive upload and Drive round-trip restore drill pass.
 
 ## Architecture
 
@@ -77,8 +79,7 @@ locations:
 - tracking metadata: `/home/richard/.local/state/gen-ui-hub-litestream`.
 
 It keeps hourly snapshots for seven days, validates the replica every six hours, and keeps mutable
-Litestream metadata outside the application repository. The service must be deployed and pass a
-local restore drill before this increment is complete.
+Litestream metadata outside the application repository.
 
 Remaining planned units:
 
@@ -109,3 +110,17 @@ Before calling the backup operational:
 Production configuration changes must be developed and committed on `thinkpad-t14s-gen6`.
 `x300m-stx` may only receive clean commits with `git pull --ff-only` followed by the normal NixOS
 validation and switch workflow.
+
+## Verification record
+
+### 2026-07-21 local replica and restore drill
+
+- First successful snapshot: `2026-07-21T11:16:54+08:00`.
+- Restore completed: `2026-07-21T11:17:53+08:00`.
+- Restored size: `79,777,792` bytes.
+- `PRAGMA integrity_check`: `ok`.
+- `PRAGMA foreign_key_check`: zero violations.
+- Source/restored row counts matched for `sessions`, `chat_messages`, `memory_event`, `fact`,
+  `episode`, `audiobook_book`, and `audiobook_chapter`.
+- The restored database was created under a fresh `/tmp` directory and removed after validation;
+  production `hub.db` was never overwritten.
