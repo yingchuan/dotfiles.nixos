@@ -7,10 +7,11 @@
   passed an encrypted read/write/delete probe.
 - The declarative x300m Litestream local-replica service is deployed and active.
 - The first production local restore drill passed on 2026-07-21.
-- The x300m upload timer and encrypted Drive round-trip restore drill are not implemented yet.
+- The x300m encrypted Drive upload timer is deployed and active.
+- The first encrypted Drive round-trip restore drill passed on 2026-07-21.
 
-The local replica is restorable, but the backup is not durable off-machine until the encrypted
-Google Drive upload and Drive round-trip restore drill pass.
+The backup is durable off-machine and has passed both local-replica and encrypted Drive
+round-trip restore drills.
 
 ## Architecture
 
@@ -69,7 +70,7 @@ chmod 600 /home/richard/.config/rclone/rclone.conf
 
 Do not store this file in Git or the Nix store.
 
-## Planned x300m units
+## x300m units
 
 The pinned Litestream 0.5 service is defined in `hosts/x300m-stx/litestream.nix`. It runs as
 `richard` because `/home/richard` is intentionally mode `0700`, and writes only these runtime
@@ -81,11 +82,15 @@ locations:
 It keeps hourly snapshots for seven days, validates the replica every six hours, and keeps mutable
 Litestream metadata outside the application repository.
 
-Remaining planned units:
+The deployed upload path uses:
 
 - `gen-ui-hub-gdrive-backup.service` as `Type=oneshot`;
-- `gen-ui-hub-gdrive-backup.timer` every 15 to 30 minutes with `Persistent=true`;
-- optionally, a weekly restore-drill service and timer.
+- `gen-ui-hub-gdrive-backup.timer` every 20 minutes with `Persistent=true` and up to two minutes
+  of randomized delay;
+- rclone's normal high-level retries to tolerate Litestream compaction replacing an LTX file
+  between directory enumeration and file open.
+
+A weekly restore-drill service and timer remain optional future work.
 
 The upload unit must copy the Litestream replica, never the live `hub.db`.
 
@@ -124,3 +129,22 @@ validation and switch workflow.
   `episode`, `audiobook_book`, and `audiobook_chapter`.
 - The restored database was created under a fresh `/tmp` directory and removed after validation;
   production `hub.db` was never overwritten.
+
+### 2026-07-21 encrypted Drive round-trip restore drill
+
+- First timer-driven upload started: `2026-07-21T11:31:58+08:00`.
+- Upload completed successfully: `2026-07-21T11:33:39+08:00`.
+- During the first pass, Litestream compaction replaced several enumerated LTX files. Rclone's
+  second high-level attempt re-enumerated the replica and completed successfully; the systemd
+  service exited with status zero.
+- The encrypted replica was downloaded through `gdrive-crypt:` to a fresh temporary directory.
+- Drive round-trip restore completed: `2026-07-21T11:35:26+08:00`.
+- Restored size: `79,794,176` bytes.
+- `PRAGMA integrity_check`: `ok`.
+- `PRAGMA foreign_key_check`: zero violations.
+- Source/restored row counts matched for `sessions`, `chat_messages`, `memory_event`, `fact`,
+  `episode`, `audiobook_book`, and `audiobook_chapter`.
+- Litestream and gen-ui-hub remained active, and the local application endpoint returned HTTP
+  200.
+- The restored database was never substituted for production `hub.db`; the temporary download
+  and restored database were deleted after validation.
