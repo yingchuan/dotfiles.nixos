@@ -3,7 +3,8 @@
 let
   databasePath = "/home/richard/gen-ui-hub/docs/hub.db";
   databaseDirectory = "/home/richard/gen-ui-hub/docs";
-  replicaRoot = "/home/richard/.local/share/gen-ui-hub-backup/litestream";
+  backupRoot = "/home/richard/.local/share/gen-ui-hub-backup";
+  replicaRoot = "${backupRoot}/litestream";
   metadataRoot = "/home/richard/.local/state/gen-ui-hub-litestream";
 
   configFile = (pkgs.formats.yaml { }).generate "gen-ui-hub-litestream.yml" {
@@ -46,6 +47,7 @@ in
   # The service runs as richard because /home/richard is intentionally 0700.
   # Keep both runtime directories private; only replicaRoot is uploaded later.
   systemd.tmpfiles.rules = [
+    "d ${backupRoot} 0700 richard users - -"
     "d ${replicaRoot} 0700 richard users - -"
     "d ${metadataRoot} 0700 richard users - -"
   ];
