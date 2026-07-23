@@ -35,7 +35,10 @@ does not retain objects that Litestream has expired or replaced through compacti
 
 ## rclone remotes
 
-- `gdrive:` uses the `drive` backend with `drive.file` scope and a dedicated Desktop OAuth client.
+- `gdrive:` uses the `drive` backend with full `drive` scope and a dedicated Desktop OAuth client.
+  Full scope is required because Google revokes `drive.file` authorization for previously created
+  children after app deauthorization, which prevents reliable retention cleanup. The remote is
+  operationally constrained to the dedicated `gen-ui-hub/litestream` backing path.
 - `gdrive-crypt:` uses the `crypt` backend and points to
   `gdrive:gen-ui-hub/litestream`.
 - Standard filename encryption and directory-name encryption are enabled.
@@ -151,3 +154,29 @@ validation and switch workflow.
   200.
 - The restored database was never substituted for production `hub.db`; the temporary download
   and restored database were deleted after validation.
+
+### 2026-07-24 seven-day retention reset and restore drill
+
+- Before reset, the local replica had grown to `3,064,282,461` bytes and `8,732` files; Drive had
+  retained compacted and expired objects because the initial upload policy used `rclone copy`.
+- Backup timer, upload service, and Litestream were stopped before deletion.
+- The local Litestream replica, Litestream tracking metadata, and dedicated `gdrive-crypt:` root
+  were cleared. Production `hub.db` was never deleted, stopped, or overwritten.
+- The Google OAuth scope was changed from `drive.file` to `drive`. The narrower scope could upload
+  but returned `appNotAuthorizedToChild` while deleting objects created before reauthorization,
+  making remote retention unreliable.
+- Litestream restarted from TXID `0000000000000001`; its first new replica was approximately
+  `127.5` MB with 17 files.
+- The first baseline `rclone sync --delete-after` completed on its third high-level attempt.
+  Google Drive temporarily rate-limited several uploads, and a concurrent Litestream compaction
+  replaced one enumerated LTX file. Rclone did not delete remote objects during failed attempts and
+  re-enumerated successfully.
+- Drive round-trip download started: `2026-07-24T04:07:22+08:00`.
+- Restore completed: `2026-07-24T04:09:08+08:00`.
+- Restored size: `83,677,184` bytes.
+- `PRAGMA integrity_check`: `ok`.
+- `PRAGMA foreign_key_check`: zero violations.
+- Source/restored row counts matched for `sessions`, `chat_messages`, `memory_event`, `fact`,
+  `episode`, `audiobook_book`, and `audiobook_chapter`.
+- Litestream, the upload timer, and gen-ui-hub remained active; local HTTP returned 200.
+- The temporary download and restored database were deleted after validation.
