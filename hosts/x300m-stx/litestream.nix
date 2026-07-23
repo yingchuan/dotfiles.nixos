@@ -16,8 +16,9 @@ let
       stderr = true;
     };
 
-    # Keep a week of local recovery history. The later rclone layer starts with
-    # `copy`, not `sync`, so expiry here cannot delete older Drive objects.
+    # Keep a week of recovery history. The rclone layer mirrors this retained
+    # replica to Drive, so expired and compacted objects are removed remotely
+    # only after a successful transfer pass.
     snapshot = {
       interval = "1h";
       retention = "168h";
@@ -108,7 +109,7 @@ in
         "${pkgs.coreutils}/bin/test -r ${rcloneConfig}"
         "${pkgs.coreutils}/bin/test -d ${replicaRoot}"
       ];
-      ExecStart = "${pkgs.rclone}/bin/rclone copy ${replicaRoot} gdrive-crypt: --config ${rcloneConfig} --cache-dir ${rcloneCache} --checkers 4 --transfers 2";
+      ExecStart = "${pkgs.rclone}/bin/rclone sync ${replicaRoot} gdrive-crypt: --config ${rcloneConfig} --cache-dir ${rcloneCache} --checkers 4 --transfers 2 --delete-after";
 
       NoNewPrivileges = true;
       PrivateDevices = true;

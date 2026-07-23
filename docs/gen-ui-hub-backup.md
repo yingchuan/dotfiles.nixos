@@ -28,8 +28,10 @@ Google Drive: gdrive:gen-ui-hub/litestream
 Litestream, rather than rclone, reads the live SQLite database and its WAL. Do not copy the live
 database or WAL directly with rclone, and do not place the database on an rclone/FUSE mount.
 
-Use `rclone copy`, not `rclone sync`, for the first implementation so a configuration mistake
-cannot delete remote history.
+The initial acceptance phase used `rclone copy` so a configuration mistake could not delete remote
+history. After both local and Drive round-trip restore drills passed, the operational policy moved
+to `rclone sync --delete-after`: Drive mirrors Litestream's validated seven-day local replica and
+does not retain objects that Litestream has expired or replaced through compaction.
 
 ## rclone remotes
 
@@ -87,6 +89,7 @@ The deployed upload path uses:
 - `gen-ui-hub-gdrive-backup.service` as `Type=oneshot`;
 - `gen-ui-hub-gdrive-backup.timer` every 20 minutes with `Persistent=true` and up to two minutes
   of randomized delay;
+- `rclone sync --delete-after`, so remote deletion happens only after a successful transfer pass;
 - rclone's normal high-level retries to tolerate Litestream compaction replacing an LTX file
   between directory enumeration and file open.
 
