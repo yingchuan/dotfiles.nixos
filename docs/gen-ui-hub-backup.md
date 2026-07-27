@@ -9,6 +9,8 @@
 - The first production local restore drill passed on 2026-07-21.
 - The x300m encrypted Drive upload timer is deployed and active.
 - The first encrypted Drive round-trip restore drill passed on 2026-07-21.
+- Deletions are permanent as of 2026-07-27; expired objects no longer accumulate in Drive Trash.
+- Snapshot retention is 48 hours, not seven days; see "Retention sizing".
 
 The backup is durable off-machine and has passed both local-replica and encrypted Drive
 round-trip restore drills.
@@ -19,7 +21,8 @@ round-trip restore drills.
 /home/richard/gen-ui-hub/docs/hub.db (SQLite WAL)
     -> Litestream continuous file replica
 /home/richard/.local/share/gen-ui-hub-backup/litestream
-    -> periodic rclone copy through gdrive-crypt
+    -> periodic rclone sync --delete-after --drive-use-trash=false
+       through gdrive-crypt
 Google Drive: gdrive-crypt:
     -> encrypted backing path
 Google Drive: gdrive:gen-ui-hub/litestream
@@ -30,8 +33,27 @@ database or WAL directly with rclone, and do not place the database on an rclone
 
 The initial acceptance phase used `rclone copy` so a configuration mistake could not delete remote
 history. After both local and Drive round-trip restore drills passed, the operational policy moved
-to `rclone sync --delete-after`: Drive mirrors Litestream's validated seven-day local replica and
-does not retain objects that Litestream has expired or replaced through compaction.
+to `rclone sync --delete-after`: Drive mirrors Litestream's validated local replica and does not
+retain objects that Litestream has expired or replaced through compaction.
+
+`--delete-after` alone did not free any Drive quota, because rclone's Drive backend moves deletions
+to Trash by default. The sync command therefore also passes `--drive-use-trash=false`. That flag is
+scoped to this single command, which can only reach the dedicated `gdrive-crypt:` backing path, so
+it cannot affect anything the user deletes elsewhere in Drive.
+
+## Retention sizing
+
+Litestream level-9 LTX files are full snapshots of the database, not increments. At an 86 MiB
+`hub.db` each one is about 43 MiB, so hourly snapshots cost roughly 1 GiB per retained day, both in
+the local replica and on Drive.
+
+The original seven-day window was therefore heading for about 7 GiB steady state. Measured on
+2026-07-27, three days after the retention reset: local replica 3.5 GiB across 10,503 files, of
+which `ltx/9` alone was 3.2 GiB across 79 snapshots.
+
+The window is now 48 hours with the hourly granularity kept, which settles at 48 snapshots and
+about 2 GiB. Revisit this if `hub.db` grows substantially; the cost scales with database size times
+retained hours.
 
 ## rclone remotes
 
@@ -84,7 +106,7 @@ locations:
 - replica: `/home/richard/.local/share/gen-ui-hub-backup/litestream`;
 - tracking metadata: `/home/richard/.local/state/gen-ui-hub-litestream`.
 
-It keeps hourly snapshots for seven days, validates the replica every six hours, and keeps mutable
+It keeps hourly snapshots for 48 hours, validates the replica every six hours, and keeps mutable
 Litestream metadata outside the application repository.
 
 The deployed upload path uses:
@@ -92,9 +114,17 @@ The deployed upload path uses:
 - `gen-ui-hub-gdrive-backup.service` as `Type=oneshot`;
 - `gen-ui-hub-gdrive-backup.timer` every 20 minutes with `Persistent=true` and up to two minutes
   of randomized delay;
-- `rclone sync --delete-after`, so remote deletion happens only after a successful transfer pass;
+- `rclone sync --delete-after --drive-use-trash=false`, so remote deletion happens only after a
+  successful transfer pass and actually frees quota;
 - rclone's normal high-level retries to tolerate Litestream compaction replacing an LTX file
   between directory enumeration and file open.
+
+`ReadWritePaths` must grant the rclone configuration *directory*, not just `rclone.conf`. rclone
+persists a refreshed OAuth token by writing `rclone.conf<random>` beside the original and renaming
+over it, which a writable file inside a read-only directory cannot satisfy. When this was wrong the
+unit still succeeded, because the refreshed access token was held in memory, but it logged
+`Failed to save config after 10 tries: ... read-only file system` on every run and would have
+failed silently the first time Google rotated the refresh token.
 
 A weekly restore-drill service and timer remain optional future work.
 
@@ -180,3 +210,49 @@ validation and switch workflow.
   `episode`, `audiobook_book`, and `audiobook_chapter`.
 - Litestream, the upload timer, and gen-ui-hub remained active; local HTTP returned 200.
 - The temporary download and restored database were deleted after validation.
+
+### 2026-07-27 permanent deletion, 48-hour retention, and restore drill
+
+Trash accounting before any deletion, cross-checked three ways:
+
+- `rclone about gdrive:` reported `Trashed: 3.006 GiB`.
+- A recursive count over the whole drive returned 39,905 trashed objects / 3.006 GiB.
+- Recursing from the backup folder id returned 39,903 objects / 3.006 GiB, plus 2 objects / 106 B
+  in a second, empty `gen-ui-hub` folder at drive root.
+- 39,903 + 2 = 39,905, so every trashed object belonged to the backup tree and no unrelated user
+  file was at risk.
+
+Note that `--drive-trashed-only` filters files but not directory listings; a trashed and a live
+directory of the same name are indistinguishable in `lsf` output. Scope by folder id instead, which
+is what made the accounting above conclusive.
+
+Effect of `--drive-use-trash=false` plus the 48-hour window, measured across the change:
+
+| measurement            | before               | after                |
+| ---------------------- | -------------------- | -------------------- |
+| local replica          | 3.5 GiB / 10,503     | 2.1 GiB / 6,410      |
+| `ltx/9` full snapshots | 79                   | 48                   |
+| Drive backup tree      | 3.450 GiB / 10,459   | 2.009 GiB / 6,399    |
+| Drive `Used`           | 14.740 GiB           | 13.299 GiB           |
+| Drive `Trashed`        | 3.006 GiB            | 3.006 GiB, unchanged |
+
+The 1.441 GiB released by expiry did not appear in Trash, which is the direct evidence that
+deletion is now permanent. Under the previous behaviour `Used` would have stayed flat while
+`Trashed` grew.
+
+The pre-existing 3.006 GiB of trashed backup objects was then cleared with `rclone cleanup gdrive:`
+after the accounting above established that the trash contained nothing else. Google empties the
+trash asynchronously and took hours to work through roughly 40,000 objects.
+
+Drive round-trip restore drill on the 48-hour chain:
+
+- Download started `2026-07-27T10:36:39+08:00`, completed `2026-07-27T11:01:19+08:00`
+  (2.1 GiB, 6,436 files; the long tail is many small LTX objects, one Drive API call each).
+- Restore completed `2026-07-27T11:01:19+08:00`.
+- Restored size: `86,183,936` bytes.
+- `PRAGMA integrity_check`: `ok`.
+- `PRAGMA foreign_key_check`: zero violations.
+- Source/restored row counts matched for `sessions` (419), `chat_messages` (1242), `memory_event`
+  (800), `fact` (101), `episode` (0), `audiobook_book` (2), and `audiobook_chapter` (318).
+- Litestream, the upload timer, and gen-ui-hub remained active; local HTTP returned 200.
+- Production `hub.db` was never overwritten; the temporary directory was removed after validation.
