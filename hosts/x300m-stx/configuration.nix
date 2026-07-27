@@ -10,6 +10,7 @@
     ./audiobook-queue.nix
     ./audiobook-review.nix
     ./litestream.nix
+    ./telemetry.nix
   ];
 
   networking.hostName = "x300m-stx";
