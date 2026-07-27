@@ -16,12 +16,16 @@ let
       stderr = true;
     };
 
-    # Keep a week of recovery history. The rclone layer mirrors this retained
-    # replica to Drive, so expired and compacted objects are removed remotely
-    # only after a successful transfer pass.
+    # Two days of recovery history. Each level-9 snapshot is a full copy of the
+    # database (~43 MiB at 86 MiB on disk), so hourly snapshots cost roughly
+    # 1 GiB per retained day, both locally and on Drive. A week of them measured
+    # at 3.2 GiB after three days and was heading for ~7 GiB steady state, which
+    # is why the window is 48h rather than 168h. The rclone layer mirrors this
+    # retained replica to Drive, so expired and compacted objects are removed
+    # remotely only after a successful transfer pass.
     snapshot = {
       interval = "1h";
-      retention = "168h";
+      retention = "48h";
     };
 
     validation.interval = "6h";
@@ -109,7 +113,12 @@ in
         "${pkgs.coreutils}/bin/test -r ${rcloneConfig}"
         "${pkgs.coreutils}/bin/test -d ${replicaRoot}"
       ];
-      ExecStart = "${pkgs.rclone}/bin/rclone sync ${replicaRoot} gdrive-crypt: --config ${rcloneConfig} --cache-dir ${rcloneCache} --checkers 4 --transfers 2 --delete-after";
+      # --drive-use-trash=false is scoped to this one sync command, which only
+      # ever touches the dedicated gdrive-crypt: backing path. Without it Drive
+      # moves every expired Litestream object to Trash, so the seven-day
+      # retention above frees no quota at all. Nothing outside the backup tree
+      # is reachable from here, so the user's own Trash is unaffected.
+      ExecStart = "${pkgs.rclone}/bin/rclone sync ${replicaRoot} gdrive-crypt: --config ${rcloneConfig} --cache-dir ${rcloneCache} --checkers 4 --transfers 2 --delete-after --drive-use-trash=false";
 
       NoNewPrivileges = true;
       PrivateDevices = true;
