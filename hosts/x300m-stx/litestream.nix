@@ -6,7 +6,8 @@ let
   backupRoot = "/home/richard/.local/share/gen-ui-hub-backup";
   replicaRoot = "${backupRoot}/litestream";
   metadataRoot = "/home/richard/.local/state/gen-ui-hub-litestream";
-  rcloneConfig = "/home/richard/.config/rclone/rclone.conf";
+  rcloneConfigDir = "/home/richard/.config/rclone";
+  rcloneConfig = "${rcloneConfigDir}/rclone.conf";
   rcloneCache = "/home/richard/.cache/rclone";
 
   configFile = (pkgs.formats.yaml { }).generate "gen-ui-hub-litestream.yml" {
@@ -128,8 +129,14 @@ in
       ProtectKernelModules = true;
       ProtectKernelTunables = true;
       ProtectSystem = "strict";
+      # The directory, not just the file: rclone persists a refreshed OAuth
+      # token by writing rclone.conf<random> alongside it and renaming, so a
+      # writable file inside a read-only directory is not enough. Without this
+      # every run logged "Failed to save config ... read-only file system" and
+      # the refreshed token was kept in memory only, which would silently break
+      # the backup the first time Google rotated the refresh token.
       ReadWritePaths = [
-        rcloneConfig
+        rcloneConfigDir
         rcloneCache
       ];
       RestrictAddressFamilies = [
